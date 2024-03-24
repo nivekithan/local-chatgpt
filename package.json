@@ -13,6 +13,9 @@
     "typegen": "wrangler types"
   },
   "dependencies": {
+    "@conform-to/react": "^1.0.5",
+    "@conform-to/zod": "^1.0.5",
+    "@radix-ui/react-slot": "^1.0.2",
     "@remix-run/cloudflare": "^2.8.1",
     "@remix-run/cloudflare-pages": "^2.8.1",
     "@remix-run/react": "^2.8.1",
@@ -21,8 +24,12 @@
     "isbot": "^4.1.0",
     "lucide-react": "^0.363.0",
     "miniflare": "^3.20231030.4",
+    "openai": "^4.29.2",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
+    "react-textarea-autosize": "^8.5.3",
+    "replicache": "^14.2.2",
+    "replicache-react": "^5.0.1",
     "tailwind-merge": "^2.2.2",
     "tailwindcss-animate": "^1.0.7",
     "zod": "^3.22.4"

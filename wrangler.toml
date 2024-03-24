@@ -1,1 +1,6 @@
 name = "local-chatgpt"
+node_compact = true
+
+[[d1_database]]
+binding = "DB"
+
