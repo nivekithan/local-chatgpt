@@ -1,8 +1,0 @@
-name = "local-chatgpt"
-node_compat = true
-
-[[d1_databases ]]
-binding = "DB"
-database_name = "local-chatgpt"
-database_id = "58b5fc0c-ae39-40fc-994d-b0f68c83ea73"
-migrations_dir="drizzle"
