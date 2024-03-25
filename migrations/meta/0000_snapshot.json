@@ -1,5 +1,5 @@
 {
-  "id": "a46b5c4b-b21e-4e54-9695-90fa17e819ac",
+  "id": "4a30db06-e7fb-4a04-8734-4f7132282c23",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "5",
   "dialect": "pg",
@@ -28,7 +28,7 @@
         },
         "sort": {
           "name": "sort",
-          "type": "integer",
+          "type": "serial",
           "primaryKey": false,
           "notNull": true
         },
@@ -52,8 +52,8 @@
       "compositePrimaryKeys": {},
       "uniqueConstraints": {}
     },
-    "repliacache_client_group": {
-      "name": "repliacache_client_group",
+    "replicache_client_group": {
+      "name": "replicache_client_group",
       "schema": "",
       "columns": {
         "id": {
@@ -107,10 +107,10 @@
       },
       "indexes": {},
       "foreignKeys": {
-        "replicache_client_client_group_id_repliacache_client_group_id_fk": {
-          "name": "replicache_client_client_group_id_repliacache_client_group_id_fk",
+        "replicache_client_client_group_id_replicache_client_group_id_fk": {
+          "name": "replicache_client_client_group_id_replicache_client_group_id_fk",
           "tableFrom": "replicache_client",
-          "tableTo": "repliacache_client_group",
+          "tableTo": "replicache_client_group",
           "columnsFrom": [
             "client_group_id"
           ],
@@ -124,8 +124,8 @@
       "compositePrimaryKeys": {},
       "uniqueConstraints": {}
     },
-    "repliacache_space_key": {
-      "name": "repliacache_space_key",
+    "replicache_space": {
+      "name": "replicache_space",
       "schema": "",
       "columns": {
         "id": {
