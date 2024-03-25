@@ -43,3 +43,11 @@ export function getReplicache({
 
   return replicacheInstance;
 }
+
+export function getInitilizedReplicache() {
+  if (!replicacheInstance) {
+    throw new Error("Replicache is not initialized");
+  }
+
+  return replicacheInstance;
+}
