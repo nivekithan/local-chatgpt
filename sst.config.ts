@@ -10,7 +10,11 @@ export default $config({
   },
   async run() {
     const postgresConnectionUrl = new sst.Secret("PostgresConnectionUrl");
+    const replicacheLicenseKey = new sst.Secret("ReplicacheLicenseKey");
+    const localChatGptKey = new sst.Secret("LocalChatGptKey");
 
-    new sst.aws.Remix("LocalChatGPT", { link: [postgresConnectionUrl] });
+    new sst.aws.Remix("LocalChatGPT", {
+      link: [postgresConnectionUrl, replicacheLicenseKey, localChatGptKey],
+    });
   },
 });

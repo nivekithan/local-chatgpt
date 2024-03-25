@@ -7,4 +7,4 @@ node_modules
 # sst
 .sst
 
-./public/build
+/public/build
