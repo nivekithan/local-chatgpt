@@ -23,7 +23,7 @@ export function getReplicache({
       licenseKey: licenseKey,
       name: userId,
       logLevel: "debug",
-      // pullURL: "/resources/pull",
+      pullURL: "/resources/pull",
       pushURL: "/resources/push",
       mutators: {
         async addMessage(tx, { role, content }) {
@@ -60,6 +60,14 @@ export const ReplicacheMutationSchema = z.object({
   name: z.string(),
   args: z.record(z.unknown()),
   timestamp: z.number(),
+});
+
+export const ReplicachePullRequestSchema = z.object({
+  pullVersion: z.number(),
+  clientGroupID: z.string(),
+  cookie: z.number().nullable(),
+  profileID: z.string(),
+  schemaVersion: z.string(),
 });
 
 export const ReplicachePushRequestSchema = z.object({

@@ -23,10 +23,16 @@ export const ReplicacheClientTable = pgTable("replicache_client", {
 });
 
 export const MessagesTable = pgTable("messages", {
-  id: serial("id").primaryKey(),
+  id: text("id").primaryKey(),
   role: text("role").$type<MessageRole>().notNull(),
   content: text("content").notNull(),
   sort: serial("sort"),
   lastModifiedVersion: integer("last_modified_version").notNull().default(0),
   deleted: boolean("deleted").default(false),
+  messageListId: text("message_list_id").notNull(),
+});
+
+export const MessageListTable = pgTable("message_list", {
+  id: text("id").primaryKey(),
+  name: text("name").notNull(),
 });

@@ -49,10 +49,10 @@ export default function Index() {
 
   return (
     <div className="min-h-screen flex flex-col">
-      <div className="flex-1 max-h-[calc(100vh-72px)] overflow-auto">
+      <div className="flex-1 max-h-[calc(100vh-72px)]overflow-auto">
         <MessageList replicache={replicache} />
       </div>
-      <div className="fixed bottom-0 left-0 right-0 bg-background h-[72px]">
+      <div className="fixed bottom-0 left-0 right-0 bg-background">
         <SearchQuery />
       </div>
     </div>
