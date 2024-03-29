@@ -35,4 +35,7 @@ export const MessagesTable = pgTable("messages", {
 export const MessageListTable = pgTable("message_list", {
   id: text("id").primaryKey(),
   name: text("name").notNull(),
+  lastModifiedVersion: integer("last_modified_version").notNull().default(0),
+  deleted: boolean("deleted").default(false),
+  sort: serial("sort"),
 });

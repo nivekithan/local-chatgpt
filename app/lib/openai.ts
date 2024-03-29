@@ -30,3 +30,32 @@ export async function getGpt4Result({
 
   return response;
 }
+
+export async function summarizeQuery({
+  query,
+  openAiKey,
+}: {
+  query: string;
+  openAiKey: string;
+}) {
+  const openai = new OpenAI({
+    apiKey: openAiKey,
+    dangerouslyAllowBrowser: true,
+  });
+
+  const result = await openai.chat.completions.create({
+    messages: [
+      {
+        role: "system",
+        content:
+          "You are ai agent. Great at summarizing the user questions to a title. Your job is read the user question and return the title which summarizes the question. Return only the title. Without any markers as Title: or anything. Just the title.",
+      },
+      { role: "user", content: query },
+    ],
+    model: "gpt-3.5-turbo",
+  });
+
+  const response = result.choices[0].message.content || query;
+
+  return response;
+}

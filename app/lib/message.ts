@@ -20,7 +20,7 @@ export async function listSortedMessages(
   messageListId: string
 ) {
   const messages = await tx
-    .scan<Message>({ prefix: `message:${messageListId}` })
+    .scan<Message>({ prefix: `message/${messageListId}` })
     .entries()
     .toArray();
 

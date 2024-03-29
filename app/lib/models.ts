@@ -1,5 +1,6 @@
 import { Transaction } from "./utils/db.server";
 import {
+  MessageListTable,
   MessagesTable,
   REPLICACHE_SPACE_ID,
   ReplicacheClientGroupTable,
@@ -59,11 +60,31 @@ export async function handleMutation(
   const mutation = PossibleMutationsSchema.parse({ name, args });
 
   if (mutation.name === "addMessage") {
-    const { content, role } = mutation.args;
+    const { content, role, messageListId } = mutation.args;
+    await tx.insert(MessagesTable).values({
+      content,
+      role,
+      lastModifiedVersion: version,
+      messageListId: messageListId,
+      id: crypto.randomUUID(),
+    });
+    return;
+  } else if (mutation.name === "addMessageList") {
+    const { id, name } = mutation.args;
     await tx
-      .insert(MessagesTable)
-      .values({ content, role, lastModifiedVersion: version });
+      .insert(MessageListTable)
+      .values({ name: name, id: id, lastModifiedVersion: version });
+    return;
+  } else if (mutation.name === "updateMessageListTitle") {
+    const { id, newTitle } = mutation.args;
+    await tx
+      .update(MessageListTable)
+      .set({ name: newTitle, lastModifiedVersion: version })
+      .where(eq(MessageListTable.id, id));
+    return;
   }
+
+  throw new Error(`Unknown mutation: ${mutation.name}`);
 }
 
 export async function getSpace(tx: Transaction) {
@@ -82,6 +103,7 @@ export async function getSpace(tx: Transaction) {
 
   return spaces[0];
 }
+
 export async function getClient(
   tx: Transaction,
   { clientGroupID, clientID }: { clientID: string; clientGroupID: string }

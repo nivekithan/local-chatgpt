@@ -17,6 +17,10 @@ export type ReplicacheInstance = Replicache<{
     tx: WriteTransaction,
     messageList: { name: string; id: string }
   ): Promise<string>;
+  updateMessageListTitle(
+    tx: WriteTransaction,
+    args: { id: string; newTitle: string }
+  ): void;
 }>;
 
 let replicacheInstance: ReplicacheInstance | null = null;
@@ -33,8 +37,8 @@ export function getReplicache({
       licenseKey: licenseKey,
       name: userId,
       // logLevel: "debug",
-      // pullURL: "/resources/pull",
-      // pushURL: "/resources/push",
+      pullURL: "/resources/pull",
+      pushURL: "/resources/push",
       mutators: {
         async addMessage(tx, { role, content, messageListId }) {
           const allMessage = await listSortedMessages(tx, messageListId);
@@ -42,7 +46,7 @@ export function getReplicache({
           const lastSortKey = allMessage.at(-1)?.[1].sort ?? 0;
           const id = crypto.randomUUID() as string;
 
-          await tx.set(`message:${messageListId}/${crypto.randomUUID()}`, {
+          await tx.set(`message/${messageListId}/${crypto.randomUUID()}`, {
             sort: lastSortKey + 1,
             content,
             role,
@@ -61,6 +65,17 @@ export function getReplicache({
           } satisfies MessageList);
 
           return id;
+        },
+        async updateMessageListTitle(tx, { id, newTitle }) {
+          const messageList = await tx.get<MessageList>(`messageList/${id}`);
+          if (!messageList) {
+            throw new Error("Message list not found");
+          }
+
+          await tx.set(`messageList/${id}`, {
+            ...messageList,
+            name: newTitle,
+          } satisfies MessageList);
         },
       },
     });
@@ -107,15 +122,25 @@ const MessageRoleSchema = z.union([z.literal("user"), z.literal("assistant")]);
 
 export const AddMessageMutation = z.object({
   name: z.literal("addMessage"),
-  args: z.object({ content: z.string(), role: MessageRoleSchema }),
+  args: z.object({
+    content: z.string(),
+    role: MessageRoleSchema,
+    messageListId: z.string(),
+  }),
 });
 
-const PlaceholderMuation = z.object({
-  name: z.literal("placeholder"),
-  args: z.object({ content: z.string(), role: MessageRoleSchema }),
+export const AddMessageListMutation = z.object({
+  name: z.literal("addMessageList"),
+  args: z.object({ id: z.string(), name: z.string() }),
+});
+
+export const UpdateMessageListTitleMutation = z.object({
+  name: z.literal("updateMessageListTitle"),
+  args: z.object({ id: z.string(), newTitle: z.string() }),
 });
 
 export const PossibleMutationsSchema = z.discriminatedUnion("name", [
   AddMessageMutation,
-  PlaceholderMuation,
+  AddMessageListMutation,
+  UpdateMessageListTitleMutation,
 ]);

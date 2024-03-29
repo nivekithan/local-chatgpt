@@ -1,10 +1,12 @@
 import { ActionFunctionArgs, json } from "@remix-run/node";
 import { and, eq, gt } from "drizzle-orm";
-import { Message } from "~/lib/message";
+import { JSONValue } from "replicache";
+import { Message, MessageList } from "~/lib/message";
 import { getClientGroup, getSpace } from "~/lib/models";
 import { ReplicachePullRequestSchema } from "~/lib/replicache";
 import { Transaction, db } from "~/lib/utils/db.server";
 import {
+  MessageListTable,
   MessagesTable,
   ReplicacheClientTable,
 } from "~/lib/utils/schema.server";
@@ -23,10 +25,13 @@ export async function action({ request }: ActionFunctionArgs) {
       getSpace(tx),
     ]);
 
-    const [newMessages, clients] = await Promise.all([
+    const [newMessages, clients, newMessageLists] = await Promise.all([
       getNewMessages(tx, { prevVersion }),
       getAllClients(tx, { prevVersion, clientGroupID }),
+      getNewMessageList(tx, { prevVersion }),
     ]);
+
+    const patches: Array<{ op: "put"; key: string; value: JSONValue }> = [];
 
     return {
       cookie: space.version,
@@ -34,17 +39,32 @@ export async function action({ request }: ActionFunctionArgs) {
         acc[client.id] = client.lastMutationId;
         return acc;
       }, {} as Record<string, number>),
-      patch: newMessages.map((message) => {
-        return {
-          op: "put",
-          key: `message/${message.id}`,
-          value: {
-            role: message.role,
-            sort: message.sort,
-            content: message.content,
-          } satisfies Message,
-        };
-      }),
+      patch: patches
+        .concat(
+          newMessageLists.map((messageList) => {
+            return {
+              op: "put",
+              key: `messageList/${messageList.id}`,
+              value: {
+                name: messageList.name,
+                sort: messageList.sort,
+              } satisfies MessageList,
+            };
+          })
+        )
+        .concat(
+          newMessages.map((message) => {
+            return {
+              op: "put",
+              key: `message/${message.messageListId}/${message.id}`,
+              value: {
+                role: message.role,
+                sort: message.sort,
+                content: message.content,
+              } satisfies Message,
+            };
+          })
+        ),
     };
   });
 
@@ -66,6 +86,17 @@ async function getAllClients(
     );
 
   return clients;
+}
+async function getNewMessageList(
+  tx: Transaction,
+  { prevVersion }: { prevVersion: number }
+) {
+  const messageLists = await tx
+    .select()
+    .from(MessageListTable)
+    .where(gt(MessageListTable.lastModifiedVersion, prevVersion));
+
+  return messageLists;
 }
 async function getNewMessages(
   tx: Transaction,

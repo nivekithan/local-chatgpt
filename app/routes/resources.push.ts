@@ -1,5 +1,5 @@
 import { ActionFunctionArgs } from "@remix-run/node";
-import { TransactionRollbackError, eq } from "drizzle-orm";
+import { TransactionRollbackError } from "drizzle-orm";
 import {
   getClient,
   getClientGroup,
@@ -13,8 +13,6 @@ import { ReplicachePushRequestSchema } from "~/lib/replicache";
 import { db } from "~/lib/utils/db.server";
 
 export async function action({ request }: ActionFunctionArgs) {
-  console.log({ version: process.version });
-
   const body = await request.json();
 
   const { mutations, clientGroupID } = ReplicachePushRequestSchema.parse(body);
@@ -50,11 +48,16 @@ export async function action({ request }: ActionFunctionArgs) {
 
         console.log("Processing mutation");
 
-        await handleMutation(tx, {
-          args: mutation.args,
-          name: mutation.name,
-          version: nextVersion,
-        });
+        try {
+          await handleMutation(tx, {
+            args: mutation.args,
+            name: mutation.name,
+            version: nextVersion,
+          });
+        } catch (err) {
+          isError = true;
+          throw err;
+        }
 
         await setSpace(tx, nextVersion);
         await setClientGroup(tx, clientGroup.id);

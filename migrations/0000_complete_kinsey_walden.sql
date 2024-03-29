@@ -1,10 +1,19 @@
+CREATE TABLE IF NOT EXISTS "message_list" (
+	"id" text PRIMARY KEY NOT NULL,
+	"name" text NOT NULL,
+	"last_modified_version" integer DEFAULT 0 NOT NULL,
+	"deleted" boolean DEFAULT false,
+	"sort" serial NOT NULL
+);
+--> statement-breakpoint
 CREATE TABLE IF NOT EXISTS "messages" (
-	"id" serial PRIMARY KEY NOT NULL,
+	"id" text PRIMARY KEY NOT NULL,
 	"role" text NOT NULL,
 	"content" text NOT NULL,
 	"sort" serial NOT NULL,
 	"last_modified_version" integer DEFAULT 0 NOT NULL,
-	"deleted" boolean DEFAULT false
+	"deleted" boolean DEFAULT false,
+	"message_list_id" text NOT NULL
 );
 --> statement-breakpoint
 CREATE TABLE IF NOT EXISTS "replicache_client_group" (

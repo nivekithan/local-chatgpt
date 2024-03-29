@@ -13,7 +13,7 @@ import { z } from "zod";
 import { useForm } from "@conform-to/react";
 import { parseWithZod } from "@conform-to/zod";
 import { listSortedMessages, useSortedMessageList } from "~/lib/message";
-import { getGpt4Result } from "~/lib/openai";
+import { getGpt4Result, summarizeQuery } from "~/lib/openai";
 import { AutoSizeTextArea } from "~/components/ui/autoSizeTextArea";
 import { Button } from "~/components/ui/button";
 import { Replicache } from "replicache";
@@ -52,7 +52,7 @@ export default function Index() {
 
   return (
     <div className="flex">
-      <div className="w-[256px] h-screen border-r-2">
+      <div className="w-[256px] h-screen border-r-2 overflow-auto">
         <SideBar replicache={replicache} />
       </div>
       <div className="min-h-screen flex flex-col flex-1 relative">
@@ -99,6 +99,16 @@ export async function clientAction({ request }: ClientActionFunctionArgs) {
         id: `${crypto.randomUUID()}`,
       })
       : messageListId;
+
+  if (messageListId === NEW_CHAT_ID) {
+    // Start summraizing the conversation
+    summarizeQuery({ query: query, openAiKey: openaiKey }).then((title) => {
+      return replicache.mutate.updateMessageListTitle({
+        id: currentMessageListId,
+        newTitle: title,
+      });
+    });
+  }
 
   useActiveListId.getState().setActiveListId(currentMessageListId);
 
