@@ -59,7 +59,7 @@ export default function Index() {
         <div className="flex-1 max-h-[calc(100vh-72px)] overflow-auto p-4">
           <MessageList replicache={replicache} />
         </div>
-        <div className="fixed bottom-0 w-[calc(100%-260px)] right-0 bg-background h-[72px]">
+        <div className="fixed bottom-0 w-[calc(100%-260px)] right-0 bg-background min-h-[72px]">
           <SearchQuery />
         </div>
       </div>
@@ -142,7 +142,7 @@ export function SearchQuery() {
 
   return (
     <Form
-      className="flex gap-x-4 p-4 items-center"
+      className="flex gap-x-4 p-4 items-end"
       method="post"
       id={form.id}
       onSubmit={form.onSubmit}
@@ -160,7 +160,9 @@ export function SearchQuery() {
         defaultValue={messageListId}
         readOnly
       />
-      <Button type="submit">Submit</Button>
+      <Button type="submit" className="h-">
+        Submit
+      </Button>
     </Form>
   );
 }
