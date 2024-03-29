@@ -1,12 +1,22 @@
 import { Replicache, WriteTransaction } from "replicache";
-import { Message, MessageRole, listSortedMessages } from "./message";
+import {
+  Message,
+  MessageList,
+  MessageRole,
+  listSortedMessageList,
+  listSortedMessages,
+} from "./message";
 import { z } from "zod";
 
 export type ReplicacheInstance = Replicache<{
   addMessage(
     tx: WriteTransaction,
-    message: { content: string; role: MessageRole }
-  ): void;
+    message: { content: string; role: MessageRole; messageListId: string }
+  ): Promise<string>;
+  addMessageList(
+    tx: WriteTransaction,
+    messageList: { name: string; id: string }
+  ): Promise<string>;
 }>;
 
 let replicacheInstance: ReplicacheInstance | null = null;
@@ -22,20 +32,35 @@ export function getReplicache({
     replicacheInstance = new Replicache({
       licenseKey: licenseKey,
       name: userId,
-      logLevel: "debug",
-      pullURL: "/resources/pull",
-      pushURL: "/resources/push",
+      // logLevel: "debug",
+      // pullURL: "/resources/pull",
+      // pushURL: "/resources/push",
       mutators: {
-        async addMessage(tx, { role, content }) {
-          const allMessage = await listSortedMessages(tx);
+        async addMessage(tx, { role, content, messageListId }) {
+          const allMessage = await listSortedMessages(tx, messageListId);
 
           const lastSortKey = allMessage.at(-1)?.[1].sort ?? 0;
+          const id = crypto.randomUUID() as string;
 
-          await tx.set(`message/${crypto.randomUUID()}`, {
+          await tx.set(`message:${messageListId}/${crypto.randomUUID()}`, {
             sort: lastSortKey + 1,
             content,
             role,
           } satisfies Message);
+
+          return id;
+        },
+        async addMessageList(tx, { name, id }) {
+          const messageList = await listSortedMessageList(tx);
+          const nextSortKey =
+            messageList.length === 0 ? 1 : messageList[0][1].sort + 1;
+
+          await tx.set(`messageList/${id}`, {
+            name,
+            sort: nextSortKey,
+          } satisfies MessageList);
+
+          return id;
         },
       },
     });

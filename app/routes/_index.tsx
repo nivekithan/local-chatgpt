@@ -12,10 +12,13 @@ import { MessageList } from "~/components/message";
 import { z } from "zod";
 import { useForm } from "@conform-to/react";
 import { parseWithZod } from "@conform-to/zod";
-import { listSortedMessages } from "~/lib/message";
+import { listSortedMessages, useSortedMessageList } from "~/lib/message";
 import { getGpt4Result } from "~/lib/openai";
 import { AutoSizeTextArea } from "~/components/ui/autoSizeTextArea";
 import { Button } from "~/components/ui/button";
+import { Replicache } from "replicache";
+import { NEW_CHAT_ID } from "~/lib/constants";
+import { useActiveListId } from "~/lib/stores/activeMessageListId";
 
 export const meta: MetaFunction = () => {
   return [
@@ -48,12 +51,17 @@ export default function Index() {
   const { replicache } = useLoaderData<typeof clientLoader>();
 
   return (
-    <div className="min-h-screen flex flex-col">
-      <div className="flex-1 max-h-[calc(100vh-72px)] overflow-auto">
-        <MessageList replicache={replicache} />
+    <div className="flex">
+      <div className="w-[256px] h-screen border-r-2">
+        <SideBar replicache={replicache} />
       </div>
-      <div className="fixed bottom-0 left-0 right-0 bg-background h-[72px]">
-        <SearchQuery />
+      <div className="min-h-screen flex flex-col flex-1 relative">
+        <div className="flex-1 max-h-[calc(100vh-72px)] overflow-auto p-4">
+          <MessageList replicache={replicache} />
+        </div>
+        <div className="fixed bottom-0 w-[calc(100%-260px)] right-0 bg-background h-[72px]">
+          <SearchQuery />
+        </div>
       </div>
     </div>
   );
@@ -62,6 +70,7 @@ export default function Index() {
 const QuerySchema = z.object({
   openaiKey: z.string(),
   query: z.string(),
+  messageListId: z.string(),
 });
 
 function useQueryForm() {
@@ -81,17 +90,37 @@ export async function clientAction({ request }: ClientActionFunctionArgs) {
   }
 
   const replicache = getInitilizedReplicache();
-  const { openaiKey, query } = submission.value;
+  const { openaiKey, query, messageListId } = submission.value;
 
-  await replicache.mutate.addMessage({ content: query, role: "user" });
+  const currentMessageListId =
+    messageListId === NEW_CHAT_ID
+      ? await replicache.mutate.addMessageList({
+        name: query,
+        id: `${crypto.randomUUID()}`,
+      })
+      : messageListId;
 
-  const messagesWithId = await replicache.query(listSortedMessages);
+  useActiveListId.getState().setActiveListId(currentMessageListId);
+
+  await replicache.mutate.addMessage({
+    content: query,
+    role: "user",
+    messageListId: currentMessageListId,
+  });
+
+  const messagesWithId = await replicache.query((tx) =>
+    listSortedMessages(tx, currentMessageListId)
+  );
 
   const messages = messagesWithId.map(([, message]) => message);
 
   const response = await getGpt4Result({ messages: messages, openaiKey });
 
-  await replicache.mutate.addMessage({ content: response, role: "assistant" });
+  await replicache.mutate.addMessage({
+    content: response,
+    role: "assistant",
+    messageListId: currentMessageListId,
+  });
 
   return { submission: submission.reply() };
 }
@@ -99,6 +128,7 @@ export async function clientAction({ request }: ClientActionFunctionArgs) {
 export function SearchQuery() {
   const { openaiKey } = useLoaderData<typeof clientLoader>();
   const [form, formFields] = useQueryForm();
+  const messageListId = useActiveListId((state) => state.activeListId);
 
   return (
     <Form
@@ -114,7 +144,45 @@ export function SearchQuery() {
         defaultValue={openaiKey}
         readOnly
       />
+      <input
+        hidden
+        name={formFields.messageListId.name}
+        defaultValue={messageListId}
+        readOnly
+      />
       <Button type="submit">Submit</Button>
     </Form>
+  );
+}
+
+function SideBar({ replicache }: { replicache: Replicache }) {
+  const activeListId = useActiveListId((state) => state.activeListId);
+  const messageList = useSortedMessageList(replicache);
+
+  return (
+    <div className="p-4">
+      <h3 className="font-semibold text-sm mb-4">Local ChatGPT</h3>
+      <ol className="flex flex-col gap-y-4">
+        {messageList.map(([id, messageList]) => {
+          const idWithoutPrefix = id.replace("messageList/", "");
+          const isActive = activeListId === idWithoutPrefix;
+
+          return (
+            <li key={id} className="">
+              <Button
+                variant={isActive ? "secondary" : "outline"}
+                type="button"
+                className="w-full justify-start truncate overflow-hidden whitespace-nowrap block text-start"
+                onClick={() => {
+                  useActiveListId.getState().setActiveListId(idWithoutPrefix);
+                }}
+              >
+                {messageList.name}
+              </Button>
+            </li>
+          );
+        })}
+      </ol>
+    </div>
   );
 }

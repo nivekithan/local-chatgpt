@@ -1,14 +1,14 @@
 import { Message, useSortedMessage } from "~/lib/message";
 import { ReplicacheInstance } from "~/lib/replicache";
+import { useActiveListId } from "~/lib/stores/activeMessageListId";
 
 export function MessageList({
   replicache,
 }: {
   replicache: ReplicacheInstance;
 }) {
-  const messages = useSortedMessage(replicache);
-
-  console.log({ messages });
+  const messageListId = useActiveListId((state) => state.activeListId);
+  const messages = useSortedMessage(replicache, messageListId);
 
   return (
     <div className="flex flex-col gap-y-4">
