@@ -19,6 +19,7 @@ import { Button } from "~/components/ui/button";
 import { Replicache } from "replicache";
 import { NEW_CHAT_ID } from "~/lib/constants";
 import { useActiveListId } from "~/lib/stores/activeMessageListId";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 export const meta: MetaFunction = () => {
   return [
@@ -47,23 +48,27 @@ export async function clientLoader({ serverLoader }: ClientLoaderFunctionArgs) {
 
 clientLoader.hydrate = true;
 
+const queryClient = new QueryClient();
+
 export default function Index() {
   const { replicache } = useLoaderData<typeof clientLoader>();
 
   return (
-    <div className="flex">
-      <div className="w-[256px] h-screen border-r-2 overflow-auto">
-        <SideBar replicache={replicache} />
-      </div>
-      <div className="min-h-screen flex flex-col flex-1 relative">
-        <div className="flex-1 max-h-[calc(100vh-72px)] overflow-auto p-4">
-          <MessageList replicache={replicache} />
+    <QueryClientProvider client={queryClient}>
+      <div className="flex">
+        <div className="w-[256px] h-screen border-r-2 overflow-auto">
+          <SideBar replicache={replicache} />
         </div>
-        <div className="fixed bottom-0 w-[calc(100%-260px)] right-0 bg-background min-h-[72px]">
-          <SearchQuery />
+        <div className="min-h-screen flex flex-col flex-1 relative">
+          <div className="flex-1 max-h-[calc(100vh-72px)] overflow-auto p-4">
+            <MessageList replicache={replicache} />
+          </div>
+          <div className="fixed bottom-0 w-[calc(100%-260px)] right-0 bg-background min-h-[72px]">
+            <SearchQuery />
+          </div>
         </div>
       </div>
-    </div>
+    </QueryClientProvider>
   );
 }
 
