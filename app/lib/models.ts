@@ -1,4 +1,4 @@
-import { Transaction } from "./utils/db.server";
+import { Transaction, db } from "./utils/db.server";
 import {
   MessageListTable,
   MessagesTable,
@@ -6,6 +6,7 @@ import {
   ReplicacheClientGroupTable,
   ReplicacheClientTable,
   ReplicacheSpaceTable,
+  UserTable,
 } from "~/lib/utils/schema.server";
 import { PossibleMutationsSchema } from "~/lib/replicache";
 import { eq } from "drizzle-orm";
@@ -84,7 +85,7 @@ export async function handleMutation(
     return;
   }
 
-  throw new Error(`Unknown mutation: ${mutation.name}`);
+  throw new Error(`Unknown mutation`);
 }
 
 export async function getSpace(tx: Transaction) {
@@ -144,4 +145,59 @@ export async function getClientGroup(
   }
 
   return clientGroup[0];
+}
+
+export async function getUser({ googleId }: { googleId: string }) {
+  const users = await db
+    .select()
+    .from(UserTable)
+    .where(eq(UserTable.googleId, googleId));
+
+  if (users.length === 0) {
+    return null;
+  }
+
+  return users[0];
+}
+
+export async function createUser({
+  name,
+  googleId,
+}: {
+  googleId: string;
+  name: string;
+}) {
+  const user = await db
+    .insert(UserTable)
+    .values({ username: name, id: crypto.randomUUID(), googleId: googleId })
+    .onConflictDoNothing({ target: UserTable.googleId })
+    .returning();
+
+  if (user.length === 0) {
+    return null;
+  }
+
+  return user[0];
+}
+
+export async function getOrCreateUser({
+  googleId,
+  name,
+}: {
+  googleId: string;
+  name: string;
+}) {
+  const createdUser = await createUser({ name, googleId });
+
+  if (!createdUser) {
+    const existingUser = await getUser({ googleId });
+
+    if (!existingUser) {
+      throw new Error("Failed to create or get user");
+    }
+
+    return existingUser;
+  }
+
+  return createdUser;
 }

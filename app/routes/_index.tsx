@@ -1,4 +1,9 @@
-import { json, type MetaFunction } from "@remix-run/node";
+import {
+  LoaderFunctionArgs,
+  json,
+  redirect,
+  type MetaFunction,
+} from "@remix-run/node";
 import {
   ClientActionFunctionArgs,
   ClientLoaderFunctionArgs,
@@ -6,7 +11,6 @@ import {
   useLoaderData,
 } from "@remix-run/react";
 import { Resource } from "sst";
-import { getUserId } from "~/lib/user";
 import { getInitilizedReplicache, getReplicache } from "~/lib/replicache";
 import { MessageList } from "~/components/message";
 import { z } from "zod";
@@ -20,6 +24,7 @@ import { Replicache } from "replicache";
 import { NEW_CHAT_ID } from "~/lib/constants";
 import { useActiveListId } from "~/lib/stores/activeMessageListId";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { validateRequest } from "~/lib/auth.server";
 
 export const meta: MetaFunction = () => {
   return [
@@ -28,19 +33,32 @@ export const meta: MetaFunction = () => {
   ];
 };
 
-export async function loader() {
+export async function loader({ request }: LoaderFunctionArgs) {
+  const headers = new Headers();
+
+  const { user } = await validateRequest(request, headers);
+
+  if (!user) {
+    return redirect("/login", { headers });
+  }
   const repLicensekey = Resource.ReplicacheLicenseKey;
   const openaiKey = Resource.LocalChatGptKey;
 
-  return json({
-    repLicensekey: repLicensekey.value,
-    openaiKey: openaiKey.value,
-  });
+  return json(
+    {
+      repLicensekey: repLicensekey.value,
+      openaiKey: openaiKey.value,
+      userId: user.id,
+    },
+    { headers }
+  );
 }
 
 export async function clientLoader({ serverLoader }: ClientLoaderFunctionArgs) {
-  const { openaiKey, repLicensekey } = await serverLoader<typeof loader>();
-  const userId = getUserId();
+  const { openaiKey, repLicensekey, userId } = await serverLoader<
+    typeof loader
+  >();
+
   const replicache = getReplicache({ licenseKey: repLicensekey, userId });
 
   return { replicache, openaiKey };
