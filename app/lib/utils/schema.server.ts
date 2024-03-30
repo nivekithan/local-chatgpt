@@ -17,7 +17,7 @@ export const ReplicacheSpaceTable = pgTable("replicache_space", {
 
 export const ReplicacheClientGroupTable = pgTable("replicache_client_group", {
   id: text("id").primaryKey(),
-  userId: text("user_id"),
+  userId: text("user_id").notNull(),
 });
 
 export const ReplicacheClientTable = pgTable("replicache_client", {
@@ -37,6 +37,9 @@ export const MessagesTable = pgTable("messages", {
   lastModifiedVersion: integer("last_modified_version").notNull().default(0),
   deleted: boolean("deleted").default(false),
   messageListId: text("message_list_id").notNull(),
+  userId: text("user_id")
+    .notNull()
+    .references(() => UserTable.id, { onDelete: "cascade" }),
 });
 
 export const MessageListTable = pgTable("message_list", {
@@ -45,6 +48,9 @@ export const MessageListTable = pgTable("message_list", {
   lastModifiedVersion: integer("last_modified_version").notNull().default(0),
   deleted: boolean("deleted").default(false),
   sort: serial("sort"),
+  userId: text("user_id")
+    .notNull()
+    .references(() => UserTable.id, { onDelete: "cascade" }),
 });
 
 export const UserTable = pgTable("user", {

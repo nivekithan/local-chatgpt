@@ -1,5 +1,6 @@
 import { ActionFunctionArgs } from "@remix-run/node";
 import { TransactionRollbackError } from "drizzle-orm";
+import { validateRequest } from "~/lib/auth.server";
 import {
   getClient,
   getClientGroup,
@@ -13,6 +14,13 @@ import { ReplicachePushRequestSchema } from "~/lib/replicache";
 import { db } from "~/lib/utils/db.server";
 
 export async function action({ request }: ActionFunctionArgs) {
+  const headers = new Headers();
+  const { user } = await validateRequest(request, headers);
+
+  if (!user) {
+    return new Response(null, { status: 401, headers });
+  }
+
   const body = await request.json();
 
   const { mutations, clientGroupID } = ReplicachePushRequestSchema.parse(body);
@@ -21,7 +29,15 @@ export async function action({ request }: ActionFunctionArgs) {
     let isError = false;
     try {
       await db.transaction(async (tx) => {
-        const clientGroup = await getClientGroup(tx, { clientGroupID });
+        const clientGroup = await getClientGroup(tx, {
+          clientGroupID,
+          currentUserId: user.id,
+        });
+
+        if (clientGroup.userId !== user.id) {
+          return new Response(null, { status: 404, headers });
+        }
+
         const client = await getClient(tx, {
           clientGroupID,
           clientID: mutation.clientID,
@@ -53,6 +69,7 @@ export async function action({ request }: ActionFunctionArgs) {
             args: mutation.args,
             name: mutation.name,
             version: nextVersion,
+            userId: user.id,
           });
         } catch (err) {
           isError = true;
@@ -60,7 +77,7 @@ export async function action({ request }: ActionFunctionArgs) {
         }
 
         await setSpace(tx, nextVersion);
-        await setClientGroup(tx, clientGroup.id);
+        await setClientGroup(tx, { id: clientGroup.id, userId: user.id });
         await setReplicacheClient(tx, {
           id: client.id,
           clientGroupId: clientGroup.id,
@@ -71,7 +88,7 @@ export async function action({ request }: ActionFunctionArgs) {
     } catch (err) {
       if (isError) {
         console.log("Error processing", err);
-        return new Response(null, { status: 500 });
+        return new Response(null, { status: 500, headers });
       }
 
       if (err instanceof TransactionRollbackError) {
@@ -80,5 +97,5 @@ export async function action({ request }: ActionFunctionArgs) {
     }
   }
 
-  return new Response(null, { status: 200 });
+  return new Response(null, { status: 200, headers });
 }

@@ -44,10 +44,13 @@ export async function setSpace(tx: Transaction, version: number) {
     .where(eq(ReplicacheSpaceTable.id, REPLICACHE_SPACE_ID));
 }
 
-export async function setClientGroup(tx: Transaction, id: string) {
+export async function setClientGroup(
+  tx: Transaction,
+  { userId, id }: { id: string; userId: string }
+) {
   await tx
     .insert(ReplicacheClientGroupTable)
-    .values({ id })
+    .values({ id, userId })
     .onConflictDoNothing();
 }
 export async function handleMutation(
@@ -56,7 +59,13 @@ export async function handleMutation(
     name,
     args,
     version,
-  }: { name: string; args: Record<string, unknown>; version: number }
+    userId,
+  }: {
+    name: string;
+    args: Record<string, unknown>;
+    version: number;
+    userId: string;
+  }
 ) {
   const mutation = PossibleMutationsSchema.parse({ name, args });
 
@@ -68,13 +77,14 @@ export async function handleMutation(
       lastModifiedVersion: version,
       messageListId: messageListId,
       id: crypto.randomUUID(),
+      userId,
     });
     return;
   } else if (mutation.name === "addMessageList") {
     const { id, name } = mutation.args;
     await tx
       .insert(MessageListTable)
-      .values({ name: name, id: id, lastModifiedVersion: version });
+      .values({ name: name, id: id, lastModifiedVersion: version, userId });
     return;
   } else if (mutation.name === "updateMessageListTitle") {
     const { id, newTitle } = mutation.args;
@@ -133,7 +143,10 @@ export async function getClient(
 }
 export async function getClientGroup(
   tx: Transaction,
-  { clientGroupID }: { clientGroupID: string }
+  {
+    clientGroupID,
+    currentUserId,
+  }: { clientGroupID: string; currentUserId: string }
 ) {
   const clientGroup = await tx
     .select()
@@ -141,7 +154,7 @@ export async function getClientGroup(
     .where(eq(ReplicacheClientGroupTable.id, clientGroupID));
 
   if (clientGroup.length === 0) {
-    return { id: clientGroupID };
+    return { id: clientGroupID, userId: currentUserId };
   }
 
   return clientGroup[0];
