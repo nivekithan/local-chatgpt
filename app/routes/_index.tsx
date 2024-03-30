@@ -9,6 +9,8 @@ import {
   ClientLoaderFunctionArgs,
   Form,
   useLoaderData,
+  useNavigation,
+  useSubmit,
 } from "@remix-run/react";
 import { Resource } from "sst";
 import { getInitilizedReplicache, getReplicache } from "~/lib/replicache";
@@ -25,6 +27,7 @@ import { NEW_CHAT_ID } from "~/lib/constants";
 import { useActiveListId } from "~/lib/stores/activeMessageListId";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { validateRequest } from "~/lib/auth.server";
+import { useEffect, useRef } from "react";
 
 export const meta: MetaFunction = () => {
   return [
@@ -162,6 +165,19 @@ export function SearchQuery() {
   const { openaiKey } = useLoaderData<typeof clientLoader>();
   const [form, formFields] = useQueryForm();
   const messageListId = useActiveListId((state) => state.activeListId);
+  const formElementRef = useRef<HTMLFormElement | null>(null);
+  const submitForm = useSubmit();
+
+  const navigation = useNavigation();
+  const navigationState = navigation.state;
+
+  useEffect(() => {
+    if (navigationState === "submitting") {
+      formElementRef.current?.reset();
+    }
+  }, [navigationState]);
+
+  console.log({ navigation: navigation.state });
 
   return (
     <Form
@@ -169,8 +185,18 @@ export function SearchQuery() {
       method="post"
       id={form.id}
       onSubmit={form.onSubmit}
+      ref={formElementRef}
     >
-      <AutoSizeTextArea className="flex-1" name={formFields.query.name} />
+      <AutoSizeTextArea
+        className="flex-1"
+        name={formFields.query.name}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" && !e.shiftKey) {
+            e.preventDefault();
+            submitForm(formElementRef.current);
+          }
+        }}
+      />
       <input
         hidden
         name={formFields.openaiKey.name}

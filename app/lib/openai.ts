@@ -1,6 +1,30 @@
 import OpenAI from "openai";
 import { Message } from "./message";
 
+export async function getGpt3Result({
+  messages,
+  openaiKey,
+}: {
+  messages: Message[];
+  openaiKey: string;
+}) {
+  const openai = new OpenAI({
+    apiKey: openaiKey,
+    dangerouslyAllowBrowser: true,
+  });
+
+  const result = await openai.chat.completions.create({
+    messages: messages.map((message) => {
+      return {
+        role: message.role,
+        content: message.content,
+      };
+    }),
+    model: "gpt-3.5-turbo",
+  });
+
+  return result.choices[0]?.message.content;
+}
 export async function getGpt4Result({
   messages,
   openaiKey,
