@@ -6,6 +6,11 @@ export default $config({
       name: "local-chatgpt",
       removal: input?.stage === "production" ? "retain" : "remove",
       home: "aws",
+      providers: {
+        aws: {
+          region: "ap-south-1",
+        },
+      },
     };
   },
   async run() {
@@ -18,6 +23,7 @@ export default $config({
     const sessionSecret = new sst.Secret("SessionSecret");
 
     new sst.aws.Remix("LocalChatGPT", {
+      // domain: $app.stage === "prod" ? "chat.nivekithan.com" : undefined,
       link: [
         postgresConnectionUrl,
         replicacheLicenseKey,

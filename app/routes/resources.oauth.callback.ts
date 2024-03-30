@@ -11,7 +11,7 @@ import { getOrCreateUser } from "~/lib/models";
 
 const GoogleOAuthUserInfoSchema = z.object({
   sub: z.string(),
-  name: z.string(),
+  name: z.string().optional(),
 });
 
 export async function loader({ request }: LoaderFunctionArgs) {
@@ -50,8 +50,10 @@ export async function loader({ request }: LoaderFunctionArgs) {
           Authorization: `Bearer ${tokens.accessToken}`,
         },
       }
-    );
-    const userInfo = GoogleOAuthUserInfoSchema.parse(await response.json());
+    ).then((res) => res.json());
+
+    console.log("response", response);
+    const userInfo = GoogleOAuthUserInfoSchema.parse(response);
 
     const user = await getOrCreateUser({
       googleId: userInfo.sub,

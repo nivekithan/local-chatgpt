@@ -178,7 +178,7 @@ export async function createUser({
   googleId,
 }: {
   googleId: string;
-  name: string;
+  name?: string;
 }) {
   const user = await db
     .insert(UserTable)
@@ -198,7 +198,7 @@ export async function getOrCreateUser({
   name,
 }: {
   googleId: string;
-  name: string;
+  name?: string;
 }) {
   const createdUser = await createUser({ name, googleId });
 

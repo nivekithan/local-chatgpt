@@ -12,6 +12,7 @@
     "db:generate": "sst shell drizzle-kit generate:pg",
     "db:deploy": "sst shell tsx ./scripts/migrate.ts",
     "db:migrate": "pnpm run db:generate && pnpm run db:deploy",
+    "prod:db:deploy": "sst shell --stage prod tsx ./scripts/migrate.ts",
     "db:studio": "NODE_TLS_REJECT_UNAUTHORIZED=0 sst shell drizzle-kit studio"
   },
   "dependencies": {

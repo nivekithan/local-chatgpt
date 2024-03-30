@@ -56,7 +56,7 @@ export const MessageListTable = pgTable("message_list", {
 export const UserTable = pgTable("user", {
   id: text("id").primaryKey(),
   googleId: text("google_id").unique().notNull(),
-  username: text("username").notNull(),
+  username: text("username"),
 });
 
 export const SessionTable = pgTable("session", {

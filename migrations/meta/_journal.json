@@ -15,6 +15,13 @@
       "when": 1711722031221,
       "tag": "0001_friendly_blur",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1711798878182,
+      "tag": "0002_fantastic_scorpion",
+      "breakpoints": true
     }
   ]
 }
