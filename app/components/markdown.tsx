@@ -5,7 +5,7 @@ import { useSuspenseQuery } from "@tanstack/react-query";
 
 export function Markdown({ content }: { content: string }) {
   return (
-    <div className="prose prose-zinc dark:prose-invert">
+    <div className="prose prose-zinc dark:prose-invert max-w-[75ch] w-[75ch]">
       <RMarkdown
         remarkPlugins={[remarkGfm]}
         components={{

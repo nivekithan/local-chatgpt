@@ -9,7 +9,6 @@ import {
   ClientLoaderFunctionArgs,
   Form,
   useLoaderData,
-  useNavigation,
   useSubmit,
 } from "@remix-run/react";
 import { Resource } from "sst";
@@ -28,6 +27,7 @@ import { useActiveListId } from "~/lib/stores/activeMessageListId";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { validateRequest } from "~/lib/auth.server";
 import { useEffect, useRef, useState } from "react";
+import { ScrollArea } from "~/components/ui/scroll-area";
 
 export const meta: MetaFunction = () => {
   return [
@@ -77,15 +77,17 @@ export default function Index() {
   return (
     <QueryClientProvider client={queryClient}>
       <div className="flex">
-        <div className="w-[256px] h-screen border-r-2 overflow-auto">
+        <div className="w-[352px] h-screen border-r-2 overflow-auto">
           <SideBar replicache={replicache} />
         </div>
         <div className="min-h-screen flex flex-col flex-1 relative">
-          <div className="flex-1 max-h-[calc(100vh-72px)] overflow-auto p-4">
+          <div className="flex-1 max-h-[calc(100vh-72px)] overflow-auto">
             <MessageList replicache={replicache} />
           </div>
-          <div className="fixed bottom-0 w-[calc(100%-260px)] right-0 bg-background min-h-[72px]">
-            <SearchQuery />
+          <div className="fixed bottom-0 w-[calc(100%-352px)] right-0 bg-background min-h-[72px] py-4 grid place-items-center">
+            <div className="w-[75ch]">
+              <SearchQuery />
+            </div>
           </div>
         </div>
       </div>
@@ -121,9 +123,9 @@ export async function clientAction({ request }: ClientActionFunctionArgs) {
   const currentMessageListId =
     messageListId === NEW_CHAT_ID
       ? await replicache.mutate.addMessageList({
-          name: query,
-          id: `${crypto.randomUUID()}`,
-        })
+        name: query,
+        id: `${crypto.randomUUID()}`,
+      })
       : messageListId;
 
   if (messageListId === NEW_CHAT_ID) {
@@ -178,7 +180,7 @@ export function SearchQuery() {
 
   return (
     <Form
-      className="flex gap-x-4 p-4 items-end"
+      className="flex gap-x-4 "
       method="post"
       id={form.id}
       onSubmit={form.onSubmit}

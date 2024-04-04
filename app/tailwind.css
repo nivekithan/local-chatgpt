@@ -77,4 +77,21 @@
   .pre-inline {
     display: inline;
   }
+
+  ::-webkit-scrollbar {
+    width: 10px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: #222; /* Dark color for scrollbar track (background) */
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: #aaa; /* Lighter color for scrollbar thumb */
+    border-radius: 10px; /* Making the scrollbar thumb rounded */
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: #888; /* Color of the scrollbar thumb on hover */
+  }
 }

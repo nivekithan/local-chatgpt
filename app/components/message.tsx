@@ -24,11 +24,13 @@ export function MessageList({
 
   return (
     <Suspense fallback={null}>
-      <div className="flex flex-col gap-y-4">
-        {messages.map(([id, message]) => {
-          return <MessageView key={id} {...message} />;
-        })}
-        <div ref={messageEndRef}></div>
+      <div className="grid place-items-center">
+        <div className="flex flex-col gap-y-4">
+          {messages.map(([id, message]) => {
+            return <MessageView key={id} {...message} />;
+          })}
+          <div ref={messageEndRef}></div>
+        </div>
       </div>
     </Suspense>
   );
