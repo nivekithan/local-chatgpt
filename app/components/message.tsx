@@ -2,7 +2,7 @@ import { Message, useSortedMessage } from "~/lib/message";
 import { ReplicacheInstance } from "~/lib/replicache";
 import { useActiveListId } from "~/lib/stores/activeMessageListId";
 import { Markdown } from "./markdown";
-import { Suspense } from "react";
+import { Suspense, useEffect, useRef } from "react";
 
 export function MessageList({
   replicache,
@@ -12,12 +12,23 @@ export function MessageList({
   const messageListId = useActiveListId((state) => state.activeListId);
   const messages = useSortedMessage(replicache, messageListId);
 
+  const messageEndRef = useRef<HTMLDivElement | null>(null);
+
+  function scrollToBottom() {
+    messageEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
+
   return (
     <Suspense fallback={null}>
       <div className="flex flex-col gap-y-4">
         {messages.map(([id, message]) => {
           return <MessageView key={id} {...message} />;
         })}
+        <div ref={messageEndRef}></div>
       </div>
     </Suspense>
   );

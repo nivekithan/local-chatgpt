@@ -27,7 +27,7 @@ import { NEW_CHAT_ID } from "~/lib/constants";
 import { useActiveListId } from "~/lib/stores/activeMessageListId";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { validateRequest } from "~/lib/auth.server";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 export const meta: MetaFunction = () => {
   return [
@@ -121,9 +121,9 @@ export async function clientAction({ request }: ClientActionFunctionArgs) {
   const currentMessageListId =
     messageListId === NEW_CHAT_ID
       ? await replicache.mutate.addMessageList({
-        name: query,
-        id: `${crypto.randomUUID()}`,
-      })
+          name: query,
+          id: `${crypto.randomUUID()}`,
+        })
       : messageListId;
 
   if (messageListId === NEW_CHAT_ID) {
@@ -164,20 +164,17 @@ export async function clientAction({ request }: ClientActionFunctionArgs) {
 export function SearchQuery() {
   const { openaiKey } = useLoaderData<typeof clientLoader>();
   const [form, formFields] = useQueryForm();
+
   const messageListId = useActiveListId((state) => state.activeListId);
+
   const formElementRef = useRef<HTMLFormElement | null>(null);
   const submitForm = useSubmit();
 
-  const navigation = useNavigation();
-  const navigationState = navigation.state;
+  const [textareaValue, setTextareaValue] = useState("");
 
-  useEffect(() => {
-    if (navigationState === "submitting") {
-      formElementRef.current?.reset();
-    }
-  }, [navigationState]);
-
-  console.log({ navigation: navigation.state });
+  function handleOnChange(e: React.ChangeEvent<HTMLTextAreaElement>) {
+    setTextareaValue(e.currentTarget.value);
+  }
 
   return (
     <Form
@@ -189,11 +186,14 @@ export function SearchQuery() {
     >
       <AutoSizeTextArea
         className="flex-1"
+        value={textareaValue}
+        onChange={handleOnChange}
         name={formFields.query.name}
         onKeyDown={(e) => {
           if (e.key === "Enter" && !e.shiftKey) {
-            e.preventDefault();
             submitForm(formElementRef.current);
+            setTextareaValue("");
+            e.preventDefault();
           }
         }}
       />
