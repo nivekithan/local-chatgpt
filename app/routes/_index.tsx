@@ -26,8 +26,8 @@ import { NEW_CHAT_ID } from "~/lib/constants";
 import { useActiveListId } from "~/lib/stores/activeMessageListId";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { validateRequest } from "~/lib/auth.server";
-import { useEffect, useRef, useState } from "react";
-import { ScrollArea } from "~/components/ui/scroll-area";
+import { useRef, useState } from "react";
+import { streamingMessageStore } from "~/lib/stores/streamingMessage";
 
 export const meta: MetaFunction = () => {
   return [
@@ -123,9 +123,9 @@ export async function clientAction({ request }: ClientActionFunctionArgs) {
   const currentMessageListId =
     messageListId === NEW_CHAT_ID
       ? await replicache.mutate.addMessageList({
-        name: query,
-        id: `${crypto.randomUUID()}`,
-      })
+          name: query,
+          id: `${crypto.randomUUID()}`,
+        })
       : messageListId;
 
   if (messageListId === NEW_CHAT_ID) {
@@ -154,11 +154,27 @@ export async function clientAction({ request }: ClientActionFunctionArgs) {
 
   const response = await getGpt4Result({ messages: messages, openaiKey });
 
+  let combinedMessage = "";
+  for await (const chunk of response) {
+    const streamingMessage = chunk.choices[0]?.delta.content;
+
+    if (!streamingMessage) {
+      continue;
+    }
+    streamingMessageStore
+      .getState()
+      .setStreamingMessage(currentMessageListId, combinedMessage);
+    combinedMessage += streamingMessage;
+  }
+
+  console.log({ combinedMessage });
   await replicache.mutate.addMessage({
-    content: response,
+    content: combinedMessage,
     role: "assistant",
     messageListId: currentMessageListId,
   });
+
+  streamingMessageStore.getState().deleteStreamingMessage(currentMessageListId);
 
   return { submission: submission.reply() };
 }

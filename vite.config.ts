@@ -6,5 +6,6 @@ import tsconfigPaths from "vite-tsconfig-paths";
 installGlobals();
 
 export default defineConfig({
+  ssr: { external: ["react-syntax-highlighter/dist/esm/styles/prism/arta"] },
   plugins: [remix(), tsconfigPaths()],
 });

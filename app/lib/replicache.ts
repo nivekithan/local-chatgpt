@@ -56,8 +56,7 @@ export function getReplicache({
         },
         async addMessageList(tx, { name, id }) {
           const messageList = await listSortedMessageList(tx);
-          const nextSortKey =
-            messageList.length === 0 ? 1 : messageList[0][1].sort + 1;
+          const nextSortKey = (messageList.at(0)?.[1]?.sort ?? 0) + 1;
 
           await tx.set(`messageList/${id}`, {
             name,

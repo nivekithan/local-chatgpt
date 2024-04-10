@@ -104,7 +104,9 @@ export async function getSpace(tx: Transaction) {
     .from(ReplicacheSpaceTable)
     .where(eq(ReplicacheSpaceTable.id, REPLICACHE_SPACE_ID));
 
-  if (spaces.length === 0) {
+  const space = spaces[0];
+
+  if (!space) {
     const createdSpace = { id: REPLICACHE_SPACE_ID, version: 0 };
 
     await tx.insert(ReplicacheSpaceTable).values(createdSpace);
@@ -112,7 +114,7 @@ export async function getSpace(tx: Transaction) {
     return createdSpace;
   }
 
-  return spaces[0];
+  return space;
 }
 
 export async function getClient(
@@ -124,7 +126,9 @@ export async function getClient(
     .from(ReplicacheClientTable)
     .where(eq(ReplicacheClientTable.id, clientID));
 
-  if (client.length === 0) {
+  const clientRow = client[0];
+
+  if (!clientRow) {
     return {
       clientGroupId: clientGroupID,
       id: clientID,
@@ -132,8 +136,6 @@ export async function getClient(
       lastModifiedVersion: 0,
     };
   }
-
-  const clientRow = client[0];
 
   if (clientRow.clientGroupId !== clientGroupID) {
     throw new Error("Client group does not own requesting client");
@@ -148,16 +150,18 @@ export async function getClientGroup(
     currentUserId,
   }: { clientGroupID: string; currentUserId: string }
 ) {
-  const clientGroup = await tx
+  const clientGroups = await tx
     .select()
     .from(ReplicacheClientGroupTable)
     .where(eq(ReplicacheClientGroupTable.id, clientGroupID));
 
-  if (clientGroup.length === 0) {
+  const clientGroup = clientGroups[0];
+
+  if (!clientGroup) {
     return { id: clientGroupID, userId: currentUserId };
   }
 
-  return clientGroup[0];
+  return clientGroup;
 }
 
 export async function getUser({ googleId }: { googleId: string }) {

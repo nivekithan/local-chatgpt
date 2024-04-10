@@ -10,7 +10,6 @@ import {
   MessageListTable,
   MessagesTable,
   ReplicacheClientTable,
-  UserTable,
 } from "~/lib/utils/schema.server";
 
 export async function action({ request }: ActionFunctionArgs) {

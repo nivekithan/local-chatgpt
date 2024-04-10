@@ -43,16 +43,19 @@ export async function getGpt4Result({
       content: message.content,
     })),
     model: "gpt-4",
-    stream: false,
+    stream: true,
   });
 
-  const response = result.choices[0]?.message.content;
+  return result;
 
-  if (!response) {
-    throw new Error("No response from GPT-4");
-  }
-
-  return response;
+  // const response = result.choices[0]?.message.content;
+  //
+  // if (!response) {
+  //   throw new Error("No response from GPT-4");
+  // }
+  //
+  // return response;
+  //
 }
 
 export async function summarizeQuery({
@@ -79,7 +82,7 @@ export async function summarizeQuery({
     model: "gpt-3.5-turbo",
   });
 
-  const response = result.choices[0].message.content || query;
+  const response = result.choices[0]?.message.content || query;
 
   return response;
 }
