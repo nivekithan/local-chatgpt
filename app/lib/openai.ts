@@ -42,7 +42,7 @@ export async function getGpt4Result({
       role: message.role,
       content: message.content,
     })),
-    model: "gpt-4-turbo",
+    model: "gpt-4o",
     stream: true,
   });
 
