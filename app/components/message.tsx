@@ -1,7 +1,7 @@
 import { Message, useSortedMessage } from "~/lib/message";
 import { ReplicacheInstance } from "~/lib/replicache";
 import { useActiveListId } from "~/lib/stores/activeMessageListId";
-import { Markdown, SimpleMarkdown } from "./markdown";
+import { Markdown } from "./markdown";
 import { Suspense, useEffect, useRef } from "react";
 import { useStreamingMessage } from "~/lib/stores/streamingMessage";
 
@@ -49,14 +49,6 @@ export function MessageView({ role, content }: Message) {
   return <UserMessageView message={content} />;
 }
 
-function StreamingMessageView({ message }: { message: string }) {
-  return (
-    <div className="flex flex-col gap-y-0.5">
-      <h4 className="text-sm font-semibold text-green-300">ChatGPT</h4>
-      <SimpleMarkdown content={message} />
-    </div>
-  );
-}
 function AiMessageView({ message }: { message: string }) {
   return (
     <div className="flex flex-col gap-y-0.5">

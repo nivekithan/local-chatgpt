@@ -17,41 +17,6 @@ export function Markdown({ content }: { content: string }) {
             const isInline =
               node?.position?.start.line === node?.position?.end.line;
 
-            // const { data: highlightedCode } = useSuspenseQuery({
-            //   queryKey: [code],
-            //   queryFn: async () => {
-            //     try {
-            //       const highlightedCode = await codeToHtml(code, {
-            //         lang: language,
-            //         theme: "github-dark",
-            //         transformers: [
-            //           {
-            //             pre(node) {
-            //               if (isInline) {
-            //                 this.addClassToHast(node, "pre-inline not-prose");
-            //               }
-            //             },
-            //           },
-            //         ],
-            //       });
-            //       return highlightedCode;
-            //     } catch (err) {
-            //       console.log(err);
-            //       return null;
-            //     }
-            //   },
-            // });
-            //
-            // return highlightedCode ? (
-            //   <span
-            //     dangerouslySetInnerHTML={{ __html: highlightedCode }}
-            //   ></span>
-            // ) : (
-            //   <code {...rest} className={className}>
-            //     {children}
-            //   </code>
-            // );
-            //
             return (
               <Highlight
                 code={code}

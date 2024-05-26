@@ -28,7 +28,7 @@ import {
 import { AutoSizeTextArea } from "~/components/ui/autoSizeTextArea";
 import { Button } from "~/components/ui/button";
 import { Replicache } from "replicache";
-import { NEW_CHAT_ID } from "~/lib/constants";
+import { FORM_ACTIONS, NEW_CHAT_ID } from "~/lib/constants";
 import { useActiveListId } from "~/lib/stores/activeMessageListId";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { validateRequest } from "~/lib/auth.server";
@@ -108,14 +108,14 @@ export default function Index() {
 }
 
 const QuerySchema = z.object({
-  action: z.literal("search"),
+  action: z.literal(FORM_ACTIONS.SEARCH),
   openaiKey: z.string().min(1, "Set OpenAI Key"),
   query: z.string(),
   messageListId: z.string(),
 });
 
 const UpdateOpenAIKeySchema = z.object({
-  action: z.literal("updateOpenAIKey"),
+  action: z.literal(FORM_ACTIONS.UPDATE_OPENAI_KEY),
   openaiKey: z.string().min(1, "Set OpenAI Key"),
 });
 
@@ -141,77 +141,15 @@ export async function clientAction({ request }: ClientActionFunctionArgs) {
     return json({ submission: submission.reply() });
   }
 
-  const replicache = getInitilizedReplicache();
   if (submission.value.action === "updateOpenAIKey") {
     setOpenAiKey(submission.value.openaiKey);
     return { submission: submission.reply() };
-  } else {
+  } else if (submission.value.action === FORM_ACTIONS.SEARCH) {
     const { openaiKey, query, messageListId } = submission.value;
-
-    console.log({ messageListId, NEW_CHAT_ID });
-
-    const currentMessageListId =
-      messageListId === NEW_CHAT_ID
-        ? await replicache.mutate.addMessageList({
-          name: query,
-          id: `${crypto.randomUUID()}`,
-        })
-        : messageListId;
-
-    if (messageListId === NEW_CHAT_ID) {
-      // Start summraizing the conversation
-      summarizeQuery({ query: query, openAiKey: openaiKey }).then((title) => {
-        return replicache.mutate.updateMessageListTitle({
-          id: currentMessageListId,
-          newTitle: title,
-        });
-      });
-    }
-
-    useActiveListId.getState().setActiveListId(currentMessageListId);
-
-    console.log({ activeListId: useActiveListId.getState().activeListId });
-
-    await replicache.mutate.addMessage({
-      content: query,
-      role: "user",
-      messageListId: currentMessageListId,
-    });
-
-    const messagesWithId = await replicache.query((tx) =>
-      listSortedMessages(tx, currentMessageListId)
-    );
-
-    const messages = messagesWithId.map(([, message]) => message);
-
-    const response = await getGpt4Result({ messages: messages, openaiKey });
-
-    let combinedMessage = "";
-
-    for await (const chunk of response) {
-      const streamingMessage = chunk.choices[0]?.delta.content;
-
-      if (!streamingMessage) {
-        continue;
-      }
-      streamingMessageStore
-        .getState()
-        .setStreamingMessage(currentMessageListId, combinedMessage);
-      combinedMessage += streamingMessage;
-    }
-
-    console.log({ combinedMessage });
-    await replicache.mutate.addMessage({
-      content: combinedMessage,
-      role: "assistant",
-      messageListId: currentMessageListId,
-    });
-
-    streamingMessageStore
-      .getState()
-      .deleteStreamingMessage(currentMessageListId);
-
+    await processSearchQuery({ openaiKey, messageListId, query });
     return { submission: submission.reply() };
+  } else {
+    throw new Error("Unknown action");
   }
 }
 
@@ -267,7 +205,12 @@ export function SearchQuery() {
         value={messageListId}
         readOnly
       />
-      <input hidden name={formFields.action.name} value={"search"} readOnly />
+      <input
+        hidden
+        name={formFields.action.name}
+        value={FORM_ACTIONS.SEARCH}
+        readOnly
+      />
 
       <Button type="submit" className="h-">
         Submit
@@ -298,7 +241,7 @@ function SideBar({
           const isActive = activeListId === idWithoutPrefix;
 
           return (
-            <li key={id} className="">
+            <li key={id} className="relative">
               <Button
                 variant={isActive ? "secondary" : "outline"}
                 type="button"
@@ -365,7 +308,7 @@ function UpdateOpenAiKeyDialog({ openaiKey }: { openaiKey: string | null }) {
           <input
             hidden
             name={formFields.action.name}
-            defaultValue={"updateOpenAIKey"}
+            defaultValue={FORM_ACTIONS.UPDATE_OPENAI_KEY}
             readOnly
           />
           <Button type="submit" className="w-full">
@@ -375,4 +318,75 @@ function UpdateOpenAiKeyDialog({ openaiKey }: { openaiKey: string | null }) {
       </DialogContent>
     </Dialog>
   );
+}
+
+async function processSearchQuery({
+  openaiKey,
+  messageListId,
+  query,
+}: {
+  messageListId: string;
+  query: string;
+  openaiKey: string;
+}) {
+  const replicache = getInitilizedReplicache();
+
+  const currentMessageListId =
+    messageListId === NEW_CHAT_ID
+      ? await replicache.mutate.addMessageList({
+        name: query,
+        id: `${crypto.randomUUID()}`,
+      })
+      : messageListId;
+
+  if (messageListId === NEW_CHAT_ID) {
+    // Start summraizing the conversation
+    summarizeQuery({ query: query, openAiKey: openaiKey }).then((title) => {
+      return replicache.mutate.updateMessageListTitle({
+        id: currentMessageListId,
+        newTitle: title,
+      });
+    });
+  }
+
+  useActiveListId.getState().setActiveListId(currentMessageListId);
+
+  console.log({ activeListId: useActiveListId.getState().activeListId });
+
+  await replicache.mutate.addMessage({
+    content: query,
+    role: "user",
+    messageListId: currentMessageListId,
+  });
+
+  const messagesWithId = await replicache.query((tx) =>
+    listSortedMessages(tx, currentMessageListId)
+  );
+
+  const messages = messagesWithId.map(([, message]) => message);
+
+  const response = await getGpt4Result({ messages: messages, openaiKey });
+
+  let combinedMessage = "";
+
+  for await (const chunk of response) {
+    const streamingMessage = chunk.choices[0]?.delta.content;
+
+    if (!streamingMessage) {
+      continue;
+    }
+    streamingMessageStore
+      .getState()
+      .setStreamingMessage(currentMessageListId, combinedMessage);
+    combinedMessage += streamingMessage;
+  }
+
+  console.log({ combinedMessage });
+  await replicache.mutate.addMessage({
+    content: combinedMessage,
+    role: "assistant",
+    messageListId: currentMessageListId,
+  });
+
+  streamingMessageStore.getState().deleteStreamingMessage(currentMessageListId);
 }
