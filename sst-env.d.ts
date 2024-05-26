@@ -3,10 +3,6 @@
 import "sst"
 declare module "sst" {
   export interface Resource {
-    LocalChatGptKey: {
-      type: "sst.sst.Secret"
-      value: string
-    }
     OAuthGoogleClientId: {
       type: "sst.sst.Secret"
       value: string

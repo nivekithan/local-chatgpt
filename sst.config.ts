@@ -17,7 +17,6 @@ export default $config({
   async run() {
     const postgresConnectionUrl = new sst.Secret("PostgresConnectionUrl");
     const replicacheLicenseKey = new sst.Secret("ReplicacheLicenseKey");
-    const localChatGptKey = new sst.Secret("LocalChatGptKey");
     const oauthGoogleClientId = new sst.Secret("OAuthGoogleClientId");
     const oauthGoogleClientSecret = new sst.Secret("OAuthGoogleClientSecret");
     const oauthRedirectUri = new sst.Secret("OAuthRedirectUri");
@@ -28,7 +27,6 @@ export default $config({
       link: [
         postgresConnectionUrl,
         replicacheLicenseKey,
-        localChatGptKey,
         oauthGoogleClientSecret,
         oauthGoogleClientId,
         oauthRedirectUri,

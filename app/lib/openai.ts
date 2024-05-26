@@ -86,3 +86,13 @@ export async function summarizeQuery({
 
   return response;
 }
+
+export function getOpenAiKey() {
+  const openaiKey = window.localStorage.getItem("openaiKey");
+
+  return openaiKey;
+}
+
+export function setOpenAiKey(openaiKey: string) {
+  window.localStorage.setItem("openaiKey", openaiKey);
+}

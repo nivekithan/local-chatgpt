@@ -9,6 +9,7 @@ import {
   ClientLoaderFunctionArgs,
   Form,
   useLoaderData,
+  useNavigation,
   useSubmit,
 } from "@remix-run/react";
 import { Resource } from "sst";
@@ -18,7 +19,12 @@ import { z } from "zod";
 import { useForm } from "@conform-to/react";
 import { parseWithZod } from "@conform-to/zod";
 import { listSortedMessages, useSortedMessageList } from "~/lib/message";
-import { getGpt4Result, summarizeQuery } from "~/lib/openai";
+import {
+  getGpt4Result,
+  getOpenAiKey,
+  setOpenAiKey,
+  summarizeQuery,
+} from "~/lib/openai";
 import { AutoSizeTextArea } from "~/components/ui/autoSizeTextArea";
 import { Button } from "~/components/ui/button";
 import { Replicache } from "replicache";
@@ -28,6 +34,15 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { validateRequest } from "~/lib/auth.server";
 import { useEffect, useRef, useState } from "react";
 import { streamingMessageStore } from "~/lib/stores/streamingMessage";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "~/components/ui/dialog";
+import { Input } from "~/components/ui/input";
 
 export const meta: MetaFunction = () => {
   return [
@@ -45,12 +60,10 @@ export async function loader({ request }: LoaderFunctionArgs) {
     return redirect("/login", { headers });
   }
   const repLicensekey = Resource.ReplicacheLicenseKey;
-  const openaiKey = Resource.LocalChatGptKey;
 
   return json(
     {
       repLicensekey: repLicensekey.value,
-      openaiKey: openaiKey.value,
       userId: user.id,
     },
     { headers }
@@ -58,11 +71,10 @@ export async function loader({ request }: LoaderFunctionArgs) {
 }
 
 export async function clientLoader({ serverLoader }: ClientLoaderFunctionArgs) {
-  const { openaiKey, repLicensekey, userId } = await serverLoader<
-    typeof loader
-  >();
+  const { repLicensekey, userId } = await serverLoader<typeof loader>();
 
   const replicache = getReplicache({ licenseKey: repLicensekey, userId });
+  const openaiKey = getOpenAiKey();
 
   return { replicache, openaiKey };
 }
@@ -72,13 +84,13 @@ clientLoader.hydrate = true;
 const queryClient = new QueryClient();
 
 export default function Index() {
-  const { replicache } = useLoaderData<typeof clientLoader>();
+  const { replicache, openaiKey } = useLoaderData<typeof clientLoader>();
 
   return (
     <QueryClientProvider client={queryClient}>
       <div className="flex">
         <div className="w-[352px] h-screen border-r-2 overflow-auto">
-          <SideBar replicache={replicache} />
+          <SideBar replicache={replicache} openaiKey={openaiKey} />
         </div>
         <div className="min-h-screen flex flex-col flex-1 relative">
           <div className="flex-1 max-h-[calc(100vh-72px)] overflow-auto">
@@ -96,13 +108,20 @@ export default function Index() {
 }
 
 const QuerySchema = z.object({
-  openaiKey: z.string(),
+  action: z.literal("search"),
+  openaiKey: z.string().min(1, "Set OpenAI Key"),
   query: z.string(),
   messageListId: z.string(),
 });
 
+const UpdateOpenAIKeySchema = z.object({
+  action: z.literal("updateOpenAIKey"),
+  openaiKey: z.string().min(1, "Set OpenAI Key"),
+});
+
 function useQueryForm() {
   return useForm({
+    defaultValue: { action: "updateOpenAIKey" },
     onValidate({ formData }) {
       return parseWithZod(formData, { schema: QuerySchema });
     },
@@ -111,77 +130,89 @@ function useQueryForm() {
 
 export async function clientAction({ request }: ClientActionFunctionArgs) {
   const formData = await request.formData();
-  const submission = parseWithZod(formData, { schema: QuerySchema });
+  const submission = parseWithZod(formData, {
+    schema: z.discriminatedUnion("action", [
+      UpdateOpenAIKeySchema,
+      QuerySchema,
+    ]),
+  });
 
   if (submission.status !== "success") {
     return json({ submission: submission.reply() });
   }
 
   const replicache = getInitilizedReplicache();
-  const { openaiKey, query, messageListId } = submission.value;
+  if (submission.value.action === "updateOpenAIKey") {
+    setOpenAiKey(submission.value.openaiKey);
+    return { submission: submission.reply() };
+  } else {
+    const { openaiKey, query, messageListId } = submission.value;
 
-  console.log({ messageListId, NEW_CHAT_ID });
+    console.log({ messageListId, NEW_CHAT_ID });
 
-  const currentMessageListId =
-    messageListId === NEW_CHAT_ID
-      ? await replicache.mutate.addMessageList({
+    const currentMessageListId =
+      messageListId === NEW_CHAT_ID
+        ? await replicache.mutate.addMessageList({
           name: query,
           id: `${crypto.randomUUID()}`,
         })
-      : messageListId;
+        : messageListId;
 
-  if (messageListId === NEW_CHAT_ID) {
-    // Start summraizing the conversation
-    summarizeQuery({ query: query, openAiKey: openaiKey }).then((title) => {
-      return replicache.mutate.updateMessageListTitle({
-        id: currentMessageListId,
-        newTitle: title,
+    if (messageListId === NEW_CHAT_ID) {
+      // Start summraizing the conversation
+      summarizeQuery({ query: query, openAiKey: openaiKey }).then((title) => {
+        return replicache.mutate.updateMessageListTitle({
+          id: currentMessageListId,
+          newTitle: title,
+        });
       });
-    });
-  }
-
-  useActiveListId.getState().setActiveListId(currentMessageListId);
-
-  console.log({ activeListId: useActiveListId.getState().activeListId });
-
-  await replicache.mutate.addMessage({
-    content: query,
-    role: "user",
-    messageListId: currentMessageListId,
-  });
-
-  const messagesWithId = await replicache.query((tx) =>
-    listSortedMessages(tx, currentMessageListId)
-  );
-
-  const messages = messagesWithId.map(([, message]) => message);
-
-  const response = await getGpt4Result({ messages: messages, openaiKey });
-
-  let combinedMessage = "";
-
-  for await (const chunk of response) {
-    const streamingMessage = chunk.choices[0]?.delta.content;
-
-    if (!streamingMessage) {
-      continue;
     }
+
+    useActiveListId.getState().setActiveListId(currentMessageListId);
+
+    console.log({ activeListId: useActiveListId.getState().activeListId });
+
+    await replicache.mutate.addMessage({
+      content: query,
+      role: "user",
+      messageListId: currentMessageListId,
+    });
+
+    const messagesWithId = await replicache.query((tx) =>
+      listSortedMessages(tx, currentMessageListId)
+    );
+
+    const messages = messagesWithId.map(([, message]) => message);
+
+    const response = await getGpt4Result({ messages: messages, openaiKey });
+
+    let combinedMessage = "";
+
+    for await (const chunk of response) {
+      const streamingMessage = chunk.choices[0]?.delta.content;
+
+      if (!streamingMessage) {
+        continue;
+      }
+      streamingMessageStore
+        .getState()
+        .setStreamingMessage(currentMessageListId, combinedMessage);
+      combinedMessage += streamingMessage;
+    }
+
+    console.log({ combinedMessage });
+    await replicache.mutate.addMessage({
+      content: combinedMessage,
+      role: "assistant",
+      messageListId: currentMessageListId,
+    });
+
     streamingMessageStore
       .getState()
-      .setStreamingMessage(currentMessageListId, combinedMessage);
-    combinedMessage += streamingMessage;
+      .deleteStreamingMessage(currentMessageListId);
+
+    return { submission: submission.reply() };
   }
-
-  console.log({ combinedMessage });
-  await replicache.mutate.addMessage({
-    content: combinedMessage,
-    role: "assistant",
-    messageListId: currentMessageListId,
-  });
-
-  streamingMessageStore.getState().deleteStreamingMessage(currentMessageListId);
-
-  return { submission: submission.reply() };
 }
 
 export function SearchQuery() {
@@ -227,7 +258,7 @@ export function SearchQuery() {
       <input
         hidden
         name={formFields.openaiKey.name}
-        value={openaiKey}
+        value={openaiKey || ""}
         readOnly
       />
       <input
@@ -236,6 +267,8 @@ export function SearchQuery() {
         value={messageListId}
         readOnly
       />
+      <input hidden name={formFields.action.name} value={"search"} readOnly />
+
       <Button type="submit" className="h-">
         Submit
       </Button>
@@ -243,13 +276,22 @@ export function SearchQuery() {
   );
 }
 
-function SideBar({ replicache }: { replicache: Replicache }) {
+function SideBar({
+  replicache,
+  openaiKey,
+}: {
+  replicache: Replicache;
+  openaiKey: string | null;
+}) {
   const activeListId = useActiveListId((state) => state.activeListId);
   const messageList = useSortedMessageList(replicache);
 
   return (
     <div className="p-4">
-      <h3 className="font-semibold text-sm mb-4">Local ChatGPT</h3>
+      <div className="flex justify-between items-center mb-2">
+        <h3 className="font-semibold text-sm">Local ChatGPT</h3>
+        <UpdateOpenAiKeyDialog openaiKey={openaiKey} />
+      </div>
       <ol className="flex flex-col gap-y-4">
         {messageList.map(([id, messageList]) => {
           const idWithoutPrefix = id.replace("messageList/", "");
@@ -272,5 +314,65 @@ function SideBar({ replicache }: { replicache: Replicache }) {
         })}
       </ol>
     </div>
+  );
+}
+
+function UpdateOpenAiKeyDialog({ openaiKey }: { openaiKey: string | null }) {
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+
+  const [form, formFields] = useForm({
+    onValidate({ formData }) {
+      return parseWithZod(formData, {
+        schema: UpdateOpenAIKeySchema,
+      });
+    },
+  });
+
+  const navigation = useNavigation();
+
+  useEffect(() => {
+    if (navigation.state === "loading") {
+      setIsDialogOpen(false);
+    }
+  }, [navigation.state]);
+
+  return (
+    <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+      <DialogTrigger asChild>
+        <Button variant="alwaysActivelink">Set OpenAI Key</Button>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>
+            {openaiKey ? "Update OpenAI Key" : "Set OpenAI Key"}
+          </DialogTitle>
+          <DialogDescription>
+            Set OpenAI Key to use the OpenAI API. You can find your API key at
+            https://platform.openai.com/account/api-keys.
+          </DialogDescription>
+        </DialogHeader>
+        <Form
+          id={form.id}
+          onSubmit={form.onSubmit}
+          className="w-full flex flex-col gap-y-4"
+          method="post"
+        >
+          <Input
+            name={formFields.openaiKey.name}
+            defaultValue={openaiKey || ""}
+            className="w-full"
+          />
+          <input
+            hidden
+            name={formFields.action.name}
+            defaultValue={"updateOpenAIKey"}
+            readOnly
+          />
+          <Button type="submit" className="w-full">
+            {openaiKey ? "Update OpenAI Key" : "Set OpenAI Key"}
+          </Button>
+        </Form>
+      </DialogContent>
+    </Dialog>
   );
 }
