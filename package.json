@@ -14,7 +14,8 @@
     "db:migrate": "pnpm run db:generate && pnpm run db:deploy",
     "prod:db:deploy": "sst shell --stage prod tsx ./scripts/migrate.ts",
     "db:studio": "NODE_TLS_REJECT_UNAUTHORIZED=0 sst shell drizzle-kit studio",
-    "prod:db:studio": "NODE_TLS_REJECT_UNAUTHORIZED=0 sst shell --stage prod drizzle-kit studio"
+    "prod:db:studio": "NODE_TLS_REJECT_UNAUTHORIZED=0 sst shell --stage prod drizzle-kit studio",
+    "sso": "aws sso login"
   },
   "dependencies": {
     "@conform-to/react": "^1.0.6",

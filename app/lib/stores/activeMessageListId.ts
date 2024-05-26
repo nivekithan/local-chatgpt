@@ -9,6 +9,9 @@ type ActiveListState = {
 export const useActiveListId = create<ActiveListState>((set) => {
   return {
     activeListId: NEW_CHAT_ID,
-    setActiveListId: (id) => set({ activeListId: id }),
+    setActiveListId: (id) => {
+      console.log("Setting new useActiveListId", id);
+      return set({ activeListId: id });
+    },
   };
 });

@@ -9,6 +9,7 @@ export default $config({
       providers: {
         aws: {
           region: "ap-south-1",
+          profile: "dev",
         },
       },
     };

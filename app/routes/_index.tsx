@@ -26,7 +26,7 @@ import { NEW_CHAT_ID } from "~/lib/constants";
 import { useActiveListId } from "~/lib/stores/activeMessageListId";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { validateRequest } from "~/lib/auth.server";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { streamingMessageStore } from "~/lib/stores/streamingMessage";
 
 export const meta: MetaFunction = () => {
@@ -120,6 +120,8 @@ export async function clientAction({ request }: ClientActionFunctionArgs) {
   const replicache = getInitilizedReplicache();
   const { openaiKey, query, messageListId } = submission.value;
 
+  console.log({ messageListId, NEW_CHAT_ID });
+
   const currentMessageListId =
     messageListId === NEW_CHAT_ID
       ? await replicache.mutate.addMessageList({
@@ -140,6 +142,8 @@ export async function clientAction({ request }: ClientActionFunctionArgs) {
 
   useActiveListId.getState().setActiveListId(currentMessageListId);
 
+  console.log({ activeListId: useActiveListId.getState().activeListId });
+
   await replicache.mutate.addMessage({
     content: query,
     role: "user",
@@ -155,6 +159,7 @@ export async function clientAction({ request }: ClientActionFunctionArgs) {
   const response = await getGpt4Result({ messages: messages, openaiKey });
 
   let combinedMessage = "";
+
   for await (const chunk of response) {
     const streamingMessage = chunk.choices[0]?.delta.content;
 
@@ -194,6 +199,10 @@ export function SearchQuery() {
     setTextareaValue(e.currentTarget.value);
   }
 
+  useEffect(() => {
+    console.log(`MessageListId gets updated: ${messageListId}`);
+  }, [messageListId]);
+
   return (
     <Form
       className="flex gap-x-4 "
@@ -218,13 +227,13 @@ export function SearchQuery() {
       <input
         hidden
         name={formFields.openaiKey.name}
-        defaultValue={openaiKey}
+        value={openaiKey}
         readOnly
       />
       <input
         hidden
         name={formFields.messageListId.name}
-        defaultValue={messageListId}
+        value={messageListId}
         readOnly
       />
       <Button type="submit" className="h-">
