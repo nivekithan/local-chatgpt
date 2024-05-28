@@ -7,6 +7,7 @@ import {
   timestamp,
 } from "drizzle-orm/pg-core";
 import { MessageRole } from "../message";
+import { sql } from "drizzle-orm";
 
 export const REPLICACHE_SPACE_ID = 1;
 
@@ -40,6 +41,9 @@ export const MessagesTable = pgTable("messages", {
   userId: text("user_id")
     .notNull()
     .references(() => UserTable.id, { onDelete: "cascade" }),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .default(sql`now()`),
 });
 
 export const MessageListTable = pgTable("message_list", {
@@ -51,6 +55,12 @@ export const MessageListTable = pgTable("message_list", {
   userId: text("user_id")
     .notNull()
     .references(() => UserTable.id, { onDelete: "cascade" }),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .default(sql`now()`),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .notNull()
+    .default(sql`now()`),
 });
 
 export const UserTable = pgTable("user", {

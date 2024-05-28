@@ -55,6 +55,8 @@ export async function action({ request }: ActionFunctionArgs) {
               value: {
                 name: messageList.name,
                 sort: messageList.sort,
+                updatedAt: messageList.updatedAt.toISOString(),
+                createdAt: messageList.createdAt.toISOString(),
               } satisfies MessageList,
             };
           })
@@ -68,6 +70,7 @@ export async function action({ request }: ActionFunctionArgs) {
                 role: message.role,
                 sort: message.sort,
                 content: message.content,
+                createdAt: message.createdAt.toISOString(),
               } satisfies Message,
             };
           })

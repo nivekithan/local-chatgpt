@@ -41,6 +41,14 @@ export function getReplicache({
       pushURL: "/resources/push",
       mutators: {
         async addMessage(tx, { role, content, messageListId }) {
+          const messageList = await tx.get<MessageList>(
+            `messageList/${messageListId}`
+          );
+
+          if (!messageList) {
+            throw new Error("Message list not found");
+          }
+
           const allMessage = await listSortedMessages(tx, messageListId);
 
           const lastSortKey = allMessage.at(-1)?.[1].sort ?? 0;
@@ -50,7 +58,13 @@ export function getReplicache({
             sort: lastSortKey + 1,
             content,
             role,
+            createdAt: new Date().toISOString(),
           } satisfies Message);
+
+          await tx.set(`messageList/${messageListId}`, {
+            ...messageList,
+            updatedAt: new Date().toISOString(),
+          });
 
           return id;
         },
@@ -61,10 +75,13 @@ export function getReplicache({
           await tx.set(`messageList/${id}`, {
             name,
             sort: nextSortKey,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
           } satisfies MessageList);
 
           return id;
         },
+
         async updateMessageListTitle(tx, { id, newTitle }) {
           const messageList = await tx.get<MessageList>(`messageList/${id}`);
           if (!messageList) {
@@ -73,6 +90,7 @@ export function getReplicache({
 
           await tx.set(`messageList/${id}`, {
             ...messageList,
+            updatedAt: new Date().toISOString(),
             name: newTitle,
           } satisfies MessageList);
         },

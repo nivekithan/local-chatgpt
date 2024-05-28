@@ -12,6 +12,8 @@ export function MessageList({
 }) {
   const messageListId = useActiveListId((state) => state.activeListId);
   const messages = useSortedMessage(replicache, messageListId);
+
+  console.log({ messages });
   const streamingMessage = useStreamingMessage(messageListId);
 
   const messageEndRef = useRef<HTMLDivElement | null>(null);

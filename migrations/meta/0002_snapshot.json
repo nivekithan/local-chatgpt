@@ -1,10 +1,8 @@
 {
-  "id": "0fa01cef-d167-42d6-8759-618f7eafe77a",
-  "prevId": "3987d5c0-3490-454f-84d0-b6902f7588cf",
-  "version": "5",
-  "dialect": "pg",
+  "version": "6",
+  "dialect": "postgresql",
   "tables": {
-    "message_list": {
+    "public.message_list": {
       "name": "message_list",
       "schema": "",
       "columns": {
@@ -52,21 +50,21 @@
         "message_list_user_id_user_id_fk": {
           "name": "message_list_user_id_user_id_fk",
           "tableFrom": "message_list",
-          "tableTo": "user",
           "columnsFrom": [
             "user_id"
           ],
+          "tableTo": "user",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "cascade"
         }
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {}
     },
-    "messages": {
+    "public.messages": {
       "name": "messages",
       "schema": "",
       "columns": {
@@ -126,21 +124,21 @@
         "messages_user_id_user_id_fk": {
           "name": "messages_user_id_user_id_fk",
           "tableFrom": "messages",
-          "tableTo": "user",
           "columnsFrom": [
             "user_id"
           ],
+          "tableTo": "user",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "cascade"
         }
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {}
     },
-    "replicache_client_group": {
+    "public.replicache_client_group": {
       "name": "replicache_client_group",
       "schema": "",
       "columns": {
@@ -162,7 +160,7 @@
       "compositePrimaryKeys": {},
       "uniqueConstraints": {}
     },
-    "replicache_client": {
+    "public.replicache_client": {
       "name": "replicache_client",
       "schema": "",
       "columns": {
@@ -198,21 +196,21 @@
         "replicache_client_client_group_id_replicache_client_group_id_fk": {
           "name": "replicache_client_client_group_id_replicache_client_group_id_fk",
           "tableFrom": "replicache_client",
-          "tableTo": "replicache_client_group",
           "columnsFrom": [
             "client_group_id"
           ],
+          "tableTo": "replicache_client_group",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "cascade"
         }
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {}
     },
-    "replicache_space": {
+    "public.replicache_space": {
       "name": "replicache_space",
       "schema": "",
       "columns": {
@@ -236,7 +234,7 @@
       "compositePrimaryKeys": {},
       "uniqueConstraints": {}
     },
-    "session": {
+    "public.session": {
       "name": "session",
       "schema": "",
       "columns": {
@@ -264,21 +262,21 @@
         "session_user_id_user_id_fk": {
           "name": "session_user_id_user_id_fk",
           "tableFrom": "session",
-          "tableTo": "user",
           "columnsFrom": [
             "user_id"
           ],
+          "tableTo": "user",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "cascade"
         }
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {}
     },
-    "user": {
+    "public.user": {
       "name": "user",
       "schema": "",
       "columns": {
@@ -307,10 +305,10 @@
       "uniqueConstraints": {
         "user_google_id_unique": {
           "name": "user_google_id_unique",
-          "nullsNotDistinct": false,
           "columns": [
             "google_id"
-          ]
+          ],
+          "nullsNotDistinct": false
         }
       }
     }
@@ -318,8 +316,10 @@
   "enums": {},
   "schemas": {},
   "_meta": {
-    "columns": {},
     "schemas": {},
-    "tables": {}
-  }
+    "tables": {},
+    "columns": {}
+  },
+  "id": "0fa01cef-d167-42d6-8759-618f7eafe77a",
+  "prevId": "3987d5c0-3490-454f-84d0-b6902f7588cf"
 }

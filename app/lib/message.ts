@@ -8,11 +8,14 @@ export type Message = {
   content: string;
   role: MessageRole;
   sort: number;
+  createdAt: string;
 };
 
 export type MessageList = {
   name: string;
   sort: number;
+  createdAt: string;
+  updatedAt: string;
 };
 
 export async function listSortedMessages(
@@ -54,7 +57,12 @@ export function useSortedMessageList(r: Replicache) {
   const messageList = useSubscribe(r, listSortedMessageList) || [];
   const newChatList: (typeof messageList)[number] = [
     NEW_CHAT_ID,
-    { name: "Start new chat", sort: -1 },
+    {
+      name: "Start new chat",
+      sort: -1,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    },
   ];
 
   return [newChatList, ...messageList];

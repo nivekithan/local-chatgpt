@@ -79,6 +79,11 @@ export async function handleMutation(
       id: crypto.randomUUID(),
       userId,
     });
+
+    await tx
+      .update(MessageListTable)
+      .set({ updatedAt: new Date() })
+      .where(eq(MessageListTable.id, messageListId));
     return;
   } else if (mutation.name === "addMessageList") {
     const { id, name } = mutation.args;
@@ -90,7 +95,11 @@ export async function handleMutation(
     const { id, newTitle } = mutation.args;
     await tx
       .update(MessageListTable)
-      .set({ name: newTitle, lastModifiedVersion: version })
+      .set({
+        name: newTitle,
+        lastModifiedVersion: version,
+        updatedAt: new Date(),
+      })
       .where(eq(MessageListTable.id, id));
     return;
   }
