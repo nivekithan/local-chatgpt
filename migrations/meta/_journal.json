@@ -29,6 +29,13 @@
       "when": 1716876818797,
       "tag": "0004_exotic_leopardon",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1716881647505,
+      "tag": "0005_goofy_kat_farrell",
+      "breakpoints": true
     }
   ]
 }

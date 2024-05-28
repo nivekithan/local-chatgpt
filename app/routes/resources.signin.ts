@@ -7,7 +7,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
   const codeVerifier = generateCodeVerifier();
 
   const url = await googleOAuth.createAuthorizationURL(state, codeVerifier, {
-    scopes: ["openid"],
+    scopes: ["openid", "https://www.googleapis.com/auth/userinfo.email"],
   });
 
   const session = await oauthSessionStorage.getSession(

@@ -1,4 +1,4 @@
-import { LoaderFunctionArgs, json, redirect } from "@remix-run/node";
+import { LoaderFunctionArgs, redirect } from "@remix-run/node";
 import { OAuth2RequestError } from "arctic";
 import { z } from "zod";
 import {
@@ -7,11 +7,12 @@ import {
   oauthSessionStorage,
   sessionIdStorage,
 } from "~/lib/auth.server";
-import { getOrCreateUser } from "~/lib/models";
+import { createOrSetUser } from "~/lib/models";
 
 const GoogleOAuthUserInfoSchema = z.object({
   sub: z.string(),
   name: z.string().optional(),
+  email: z.string(),
 });
 
 export async function loader({ request }: LoaderFunctionArgs) {
@@ -55,9 +56,10 @@ export async function loader({ request }: LoaderFunctionArgs) {
     console.log("response", response);
     const userInfo = GoogleOAuthUserInfoSchema.parse(response);
 
-    const user = await getOrCreateUser({
+    const user = await createOrSetUser({
       googleId: userInfo.sub,
       name: userInfo.name,
+      email: userInfo.email,
     });
 
     const session = await lucia.createSession(user.id, {});

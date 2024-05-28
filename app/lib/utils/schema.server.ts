@@ -67,6 +67,7 @@ export const UserTable = pgTable("user", {
   id: text("id").primaryKey(),
   googleId: text("google_id").unique().notNull(),
   username: text("username"),
+  email: text("email"),
 });
 
 export const SessionTable = pgTable("session", {

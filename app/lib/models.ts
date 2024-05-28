@@ -173,57 +173,26 @@ export async function getClientGroup(
   return clientGroup;
 }
 
-export async function getUser({ googleId }: { googleId: string }) {
-  const users = await db
-    .select()
-    .from(UserTable)
-    .where(eq(UserTable.googleId, googleId));
-
-  if (users.length === 0) {
-    return null;
-  }
-
-  return users[0];
-}
-
-export async function createUser({
+export async function createOrSetUser({
   name,
   googleId,
+  email,
 }: {
   googleId: string;
   name?: string;
+  email: string;
 }) {
-  const user = await db
+  const userList = await db
     .insert(UserTable)
     .values({ username: name, id: crypto.randomUUID(), googleId: googleId })
-    .onConflictDoNothing({ target: UserTable.googleId })
+    .onConflictDoUpdate({ target: UserTable.googleId, set: { email: email } })
     .returning();
 
-  if (user.length === 0) {
-    return null;
+  const user = userList[0];
+
+  if (user === undefined) {
+    throw new Error("Failed to create or get user");
   }
 
-  return user[0];
-}
-
-export async function getOrCreateUser({
-  googleId,
-  name,
-}: {
-  googleId: string;
-  name?: string;
-}) {
-  const createdUser = await createUser({ name, googleId });
-
-  if (!createdUser) {
-    const existingUser = await getUser({ googleId });
-
-    if (!existingUser) {
-      throw new Error("Failed to create or get user");
-    }
-
-    return existingUser;
-  }
-
-  return createdUser;
+  return user;
 }
