@@ -45,6 +45,13 @@ import {
 import { Input } from "~/components/ui/input";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { CompletionUsage } from "openai/resources/completions.mjs";
+import { Trash } from "lucide-react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "~/components/ui/tooltip";
 
 export const meta: MetaFunction = () => {
   return [
@@ -92,8 +99,14 @@ export default function Index() {
     <QueryClientProvider client={queryClient}>
       <div className="flex">
         <SideBar replicache={replicache} openaiKey={openaiKey} />
-        <div className="min-h-screen flex flex-col flex-1 relative">
-          <div className="flex-1 max-h-[calc(100vh-72px)] overflow-auto">
+        <div className="min-h-screen flex flex-col flex-1 relative gap-y-4">
+          <div className="h-[60px] border-b-2 flex flex-col justify-center p-4">
+            <div className="flex justify-between items-center mb-2">
+              <UpdateOpenAiKeyDialog openaiKey={openaiKey} />
+              <DeleteMessageList />
+            </div>
+          </div>
+          <div className="flex-1 max-h-[calc(100vh-132px)] overflow-auto">
             <MessageList replicache={replicache} />
           </div>
           <div className="fixed bottom-0 w-[calc(100%-352px)] right-0 bg-background min-h-[72px] py-4 grid place-items-center">
@@ -119,6 +132,11 @@ const UpdateOpenAIKeySchema = z.object({
   openaiKey: z.string().min(1, "Set OpenAI Key"),
 });
 
+const DeleteMessageListSchema = z.object({
+  messageListId: z.string(),
+  action: z.literal(FORM_ACTIONS.DELETE_MESSAGE_LIST),
+});
+
 function useQueryForm() {
   return useForm({
     defaultValue: { action: "updateOpenAIKey" },
@@ -134,6 +152,7 @@ export async function clientAction({ request }: ClientActionFunctionArgs) {
     schema: z.discriminatedUnion("action", [
       UpdateOpenAIKeySchema,
       QuerySchema,
+      DeleteMessageListSchema,
     ]),
   });
 
@@ -141,12 +160,23 @@ export async function clientAction({ request }: ClientActionFunctionArgs) {
     return json({ submission: submission.reply() });
   }
 
-  if (submission.value.action === "updateOpenAIKey") {
+  if (submission.value.action === FORM_ACTIONS.UPDATE_OPENAI_KEY) {
     setOpenAiKey(submission.value.openaiKey);
     return { submission: submission.reply() };
   } else if (submission.value.action === FORM_ACTIONS.SEARCH) {
     const { openaiKey, query, messageListId } = submission.value;
     await processSearchQuery({ openaiKey, messageListId, query });
+    return { submission: submission.reply() };
+  } else if (submission.value.action === FORM_ACTIONS.DELETE_MESSAGE_LIST) {
+    if (submission.value.messageListId === NEW_CHAT_ID) {
+      // Do nothing
+      return { submission: submission.reply() };
+    }
+    const replicache = getInitilizedReplicache();
+    await replicache.mutate.deleteMessageList({
+      messageListId: submission.value.messageListId,
+    });
+    useActiveListId.getState().setActiveListId(NEW_CHAT_ID);
     return { submission: submission.reply() };
   } else {
     throw new Error("Unknown action");
@@ -263,10 +293,6 @@ function VirtualizedMessageList({ replicache }: { replicache: Replicache }) {
       className="w-[352px] h-screen border-r-2 overflow-auto p-4"
       ref={scrollableElementRef}
     >
-      {/* <div className="flex justify-between items-center mb-2"> */}
-      {/*   <h3 className="font-semibold text-sm">Local ChatGPT</h3> */}
-      {/*   <UpdateOpenAiKeyDialog openaiKey={openaiKey} /> */}
-      {/* </div> */}
       <ol
         className="flex flex-col gap-y-4"
         style={{
@@ -300,16 +326,27 @@ function VirtualizedMessageList({ replicache }: { replicache: Replicache }) {
                 transform: `translateY(${virtualItem.start}px)`,
               }}
             >
-              <Button
-                variant={isActive ? "secondary" : "outline"}
-                type="button"
-                className="w-full justify-start truncate overflow-hidden whitespace-nowrap block text-start"
-                onClick={() => {
-                  useActiveListId.getState().setActiveListId(idWithoutPrefix);
-                }}
-              >
-                {messageListTopic.name}
-              </Button>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant={isActive ? "secondary" : "outline"}
+                      type="button"
+                      className="w-full justify-start truncate overflow-hidden whitespace-nowrap block text-start"
+                      onClick={() => {
+                        useActiveListId
+                          .getState()
+                          .setActiveListId(idWithoutPrefix);
+                      }}
+                    >
+                      {messageListTopic.name}
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>{messageListTopic.name}</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             </li>
           );
         })}
@@ -376,6 +413,36 @@ function UpdateOpenAiKeyDialog({ openaiKey }: { openaiKey: string | null }) {
         </Form>
       </DialogContent>
     </Dialog>
+  );
+}
+
+function DeleteMessageList() {
+  const activeListId = useActiveListId((state) => state.activeListId);
+  const [form, formFields] = useForm({
+    onValidate({ formData }) {
+      return parseWithZod(formData, { schema: DeleteMessageListSchema });
+    },
+  });
+  return (
+    <div>
+      <Form method="post" onSubmit={form.onSubmit} id={form.id}>
+        <input
+          hidden
+          name={formFields.action.name}
+          defaultValue={FORM_ACTIONS.DELETE_MESSAGE_LIST}
+          readOnly
+        />
+        <input
+          hidden
+          name={formFields.messageListId.name}
+          value={activeListId}
+          readOnly
+        />
+        <Button variant="destructive" size="icon" type="submit">
+          <Trash size={16} />
+        </Button>
+      </Form>
+    </div>
   );
 }
 

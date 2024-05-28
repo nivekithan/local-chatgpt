@@ -28,63 +28,66 @@ export async function action({ request }: ActionFunctionArgs) {
   for (const mutation of mutations) {
     let isError = false;
     try {
-      await db.transaction(async (tx) => {
-        const clientGroup = await getClientGroup(tx, {
-          clientGroupID,
-          currentUserId: user.id,
-        });
-
-        if (clientGroup.userId !== user.id) {
-          return new Response(null, { status: 404, headers });
-        }
-
-        const client = await getClient(tx, {
-          clientGroupID,
-          clientID: mutation.clientID,
-        });
-
-        const nextMutationId = client.lastMutationId + 1;
-        const space = await getSpace(tx);
-
-        const nextVersion = space.version + 1;
-
-        if (mutation.id < nextMutationId) {
-          // Skip rollback if the mutation is already processed
-          console.log("Mutation already processed");
-          tx.rollback();
-          return;
-        }
-
-        if (mutation.id > nextMutationId) {
-          isError = true;
-          console.log("MutationId is in future");
-          tx.rollback();
-          throw new Error("MutationId is in future");
-        }
-
-        console.log("Processing mutation");
-
-        try {
-          await handleMutation(tx, {
-            args: mutation.args,
-            name: mutation.name,
-            version: nextVersion,
-            userId: user.id,
+      await db.transaction(
+        async (tx) => {
+          const clientGroup = await getClientGroup(tx, {
+            clientGroupID,
+            currentUserId: user.id,
           });
-        } catch (err) {
-          isError = true;
-          throw err;
-        }
 
-        await setSpace(tx, nextVersion);
-        await setClientGroup(tx, { id: clientGroup.id, userId: user.id });
-        await setReplicacheClient(tx, {
-          id: client.id,
-          clientGroupId: clientGroup.id,
-          lastMutationId: nextMutationId,
-          lastModifiedVersion: nextVersion,
-        });
-      });
+          if (clientGroup.userId !== user.id) {
+            return new Response(null, { status: 404, headers });
+          }
+
+          const client = await getClient(tx, {
+            clientGroupID,
+            clientID: mutation.clientID,
+          });
+
+          const nextMutationId = client.lastMutationId + 1;
+          const space = await getSpace(tx);
+
+          const nextVersion = space.version + 1;
+
+          if (mutation.id < nextMutationId) {
+            // Skip rollback if the mutation is already processed
+            console.log("Mutation already processed");
+            tx.rollback();
+            return;
+          }
+
+          if (mutation.id > nextMutationId) {
+            isError = true;
+            console.log("MutationId is in future");
+            tx.rollback();
+            throw new Error("MutationId is in future");
+          }
+
+          console.log("Processing mutation");
+
+          try {
+            await handleMutation(tx, {
+              args: mutation.args,
+              name: mutation.name,
+              version: nextVersion,
+              userId: user.id,
+            });
+          } catch (err) {
+            isError = true;
+            throw err;
+          }
+
+          await setSpace(tx, nextVersion);
+          await setClientGroup(tx, { id: clientGroup.id, userId: user.id });
+          await setReplicacheClient(tx, {
+            id: client.id,
+            clientGroupId: clientGroup.id,
+            lastMutationId: nextMutationId,
+            lastModifiedVersion: nextVersion,
+          });
+        },
+        { isolationLevel: "serializable" }
+      );
     } catch (err) {
       if (isError) {
         console.log("Error processing", err);

@@ -38,7 +38,9 @@ export async function action({ request }: ActionFunctionArgs) {
       getNewMessageList(tx, { prevVersion, userId: user.id }),
     ]);
 
-    const patches: Array<{ op: "put"; key: string; value: JSONValue }> = [];
+    const patches: Array<
+      { op: "put"; key: string; value: JSONValue } | { op: "del"; key: string }
+    > = [];
 
     return {
       cookie: space.version,
@@ -49,6 +51,9 @@ export async function action({ request }: ActionFunctionArgs) {
       patch: patches
         .concat(
           newMessageLists.map((messageList) => {
+            if (messageList.isDeleted) {
+              return { op: "del", key: `messageList/${messageList.id}` };
+            }
             return {
               op: "put",
               key: `messageList/${messageList.id}`,
@@ -63,6 +68,13 @@ export async function action({ request }: ActionFunctionArgs) {
         )
         .concat(
           newMessages.map((message) => {
+            if (message.isDeleted) {
+              return {
+                op: "del",
+                key: `message/${message.messageListId}/${message.id}`,
+              };
+            }
+
             return {
               op: "put",
               key: `message/${message.messageListId}/${message.id}`,

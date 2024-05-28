@@ -27,6 +27,10 @@ export type ReplicacheInstance = Replicache<{
     tx: WriteTransaction,
     args: { id: string; newTitle: string }
   ): void;
+  deleteMessageList(
+    tx: WriteTransaction,
+    args: { messageListId: string }
+  ): void;
 }>;
 
 let replicacheInstance: ReplicacheInstance | null = null;
@@ -105,6 +109,22 @@ export function getReplicache({
             name: newTitle,
           } satisfies MessageList);
         },
+
+        async deleteMessageList(tx, { messageListId }) {
+          // Delete all messages in the message list
+          const messages = tx
+            .scan<Message>({
+              prefix: `message/${messageListId}/`,
+            })
+            .entries();
+
+          for await (const message of messages) {
+            await tx.del(message[0]);
+          }
+
+          // Delete the message list
+          await tx.del(`messageList/${messageListId}`);
+        },
       },
     });
 
@@ -169,8 +189,14 @@ export const UpdateMessageListTitleMutation = z.object({
   args: z.object({ id: z.string(), newTitle: z.string() }),
 });
 
+export const DeleteMessageListMutation = z.object({
+  name: z.literal("deleteMessageList"),
+  args: z.object({ messageListId: z.string() }),
+});
+
 export const PossibleMutationsSchema = z.discriminatedUnion("name", [
   AddMessageMutation,
   AddMessageListMutation,
   UpdateMessageListTitleMutation,
+  DeleteMessageListMutation,
 ]);

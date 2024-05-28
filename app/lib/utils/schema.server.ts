@@ -40,6 +40,7 @@ export const MessagesTable = pgTable("messages", {
   messageListId: text("message_list_id").notNull(),
   promptTokens: integer("prompt_tokens"),
   completionTokens: integer("completion_tokens"),
+  isDeleted: boolean("is_deleted").default(false),
   userId: text("user_id")
     .notNull()
     .references(() => UserTable.id, { onDelete: "cascade" }),
@@ -57,6 +58,7 @@ export const MessageListTable = pgTable("message_list", {
   userId: text("user_id")
     .notNull()
     .references(() => UserTable.id, { onDelete: "cascade" }),
+  isDeleted: boolean("is_deleted").default(false),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .default(sql`now()`),

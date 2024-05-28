@@ -10,6 +10,7 @@ import {
 } from "~/lib/utils/schema.server";
 import { PossibleMutationsSchema } from "~/lib/replicache";
 import { eq } from "drizzle-orm";
+import { warn } from "console";
 
 export async function setReplicacheClient(
   tx: Transaction,
@@ -104,6 +105,21 @@ export async function handleMutation(
         updatedAt: new Date(),
       })
       .where(eq(MessageListTable.id, id));
+    return;
+  } else if (mutation.name === "deleteMessageList") {
+    console.log({ mutation });
+    const { messageListId } = mutation.args;
+
+    await Promise.all([
+      tx
+        .update(MessagesTable)
+        .set({ isDeleted: true, lastModifiedVersion: version })
+        .where(eq(MessagesTable.messageListId, messageListId)),
+      tx
+        .update(MessageListTable)
+        .set({ isDeleted: true, lastModifiedVersion: version })
+        .where(eq(MessageListTable.id, messageListId)),
+    ]);
     return;
   }
 
