@@ -438,9 +438,18 @@ function DeleteMessageList() {
           value={activeListId}
           readOnly
         />
-        <Button variant="destructive" size="icon" type="submit">
-          <Trash size={16} />
-        </Button>
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button variant="destructive" size="icon" type="submit">
+                <Trash size={16} />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Delete this message list</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
       </Form>
     </div>
   );
