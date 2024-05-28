@@ -43,19 +43,42 @@ export function MessageList({
   );
 }
 
-export function MessageView({ role, content }: Message) {
+export function MessageView({
+  role,
+  content,
+  completionTokens,
+  promptTokens,
+}: Message) {
   if (role === "assistant") {
-    return <AiMessageView message={content} />;
+    return (
+      <AiMessageView
+        message={content}
+        completionTokens={completionTokens}
+        promptTokens={promptTokens}
+      />
+    );
   }
 
   return <UserMessageView message={content} />;
 }
 
-function AiMessageView({ message }: { message: string }) {
+function AiMessageView({
+  message,
+  promptTokens,
+  completionTokens,
+}: {
+  message: string;
+  promptTokens?: number | null;
+  completionTokens?: number | null;
+}) {
   return (
     <div className="flex flex-col gap-y-0.5">
       <h4 className="text-sm font-semibold text-green-300">ChatGPT</h4>
       <Markdown content={message} />
+      <p className="text-xs text-muted-foreground flex gap-x-2">
+        {promptTokens ? <span>in: {promptTokens}</span> : null}
+        {completionTokens ? <span>out: {completionTokens}</span> : null}
+      </p>
     </div>
   );
 }

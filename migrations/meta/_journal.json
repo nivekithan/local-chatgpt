@@ -36,6 +36,13 @@
       "when": 1716881647505,
       "tag": "0005_goofy_kat_farrell",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1716892726716,
+      "tag": "0006_normal_gwen_stacy",
+      "breakpoints": true
     }
   ]
 }

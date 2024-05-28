@@ -11,7 +11,13 @@ import { z } from "zod";
 export type ReplicacheInstance = Replicache<{
   addMessage(
     tx: WriteTransaction,
-    message: { content: string; role: MessageRole; messageListId: string }
+    message: {
+      content: string;
+      role: MessageRole;
+      messageListId: string;
+      promptTokens?: number;
+      completionTokens?: number;
+    }
   ): Promise<string>;
   addMessageList(
     tx: WriteTransaction,
@@ -40,7 +46,10 @@ export function getReplicache({
       pullURL: "/resources/pull",
       pushURL: "/resources/push",
       mutators: {
-        async addMessage(tx, { role, content, messageListId }) {
+        async addMessage(
+          tx,
+          { role, content, messageListId, promptTokens, completionTokens }
+        ) {
           const messageList = await tx.get<MessageList>(
             `messageList/${messageListId}`
           );
@@ -59,6 +68,8 @@ export function getReplicache({
             content,
             role,
             createdAt: new Date().toISOString(),
+            promptTokens: promptTokens,
+            completionTokens: completionTokens,
           } satisfies Message);
 
           await tx.set(`messageList/${messageListId}`, {
@@ -143,6 +154,8 @@ export const AddMessageMutation = z.object({
     content: z.string(),
     role: MessageRoleSchema,
     messageListId: z.string(),
+    promptTokens: z.number().optional(),
+    completionTokens: z.number().optional(),
   }),
 });
 

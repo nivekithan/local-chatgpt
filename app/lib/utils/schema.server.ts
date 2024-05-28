@@ -38,6 +38,8 @@ export const MessagesTable = pgTable("messages", {
   lastModifiedVersion: integer("last_modified_version").notNull().default(0),
   deleted: boolean("deleted").default(false),
   messageListId: text("message_list_id").notNull(),
+  promptTokens: integer("prompt_tokens"),
+  completionTokens: integer("completion_tokens"),
   userId: text("user_id")
     .notNull()
     .references(() => UserTable.id, { onDelete: "cascade" }),

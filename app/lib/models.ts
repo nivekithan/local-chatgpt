@@ -70,13 +70,16 @@ export async function handleMutation(
   const mutation = PossibleMutationsSchema.parse({ name, args });
 
   if (mutation.name === "addMessage") {
-    const { content, role, messageListId } = mutation.args;
+    const { content, role, messageListId, completionTokens, promptTokens } =
+      mutation.args;
     await tx.insert(MessagesTable).values({
       content,
       role,
       lastModifiedVersion: version,
       messageListId: messageListId,
       id: crypto.randomUUID(),
+      completionTokens: completionTokens,
+      promptTokens: promptTokens,
       userId,
     });
 

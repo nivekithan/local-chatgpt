@@ -44,6 +44,7 @@ import {
 } from "~/components/ui/dialog";
 import { Input } from "~/components/ui/input";
 import { useVirtualizer } from "@tanstack/react-virtual";
+import { CompletionUsage } from "openai/resources/completions.mjs";
 
 export const meta: MetaFunction = () => {
   return [
@@ -426,24 +427,35 @@ async function processSearchQuery({
   const response = await getGpt4Result({ messages: messages, openaiKey });
 
   let combinedMessage = "";
+  let usage: CompletionUsage | null = null;
 
   for await (const chunk of response) {
     const streamingMessage = chunk.choices[0]?.delta.content;
+    const chatUsage = chunk.usage;
 
+    if (chatUsage) {
+      usage = chatUsage;
+    }
     if (!streamingMessage) {
       continue;
     }
+
     streamingMessageStore
       .getState()
       .setStreamingMessage(currentMessageListId, combinedMessage);
     combinedMessage += streamingMessage;
   }
 
-  console.log({ combinedMessage });
+  if (!usage) {
+    console.error("Usage data is not being returned from OpenAI");
+  }
+
   await replicache.mutate.addMessage({
     content: combinedMessage,
     role: "assistant",
     messageListId: currentMessageListId,
+    promptTokens: usage?.prompt_tokens,
+    completionTokens: usage?.completion_tokens,
   });
 
   streamingMessageStore.getState().deleteStreamingMessage(currentMessageListId);

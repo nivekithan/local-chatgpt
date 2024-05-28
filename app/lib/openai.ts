@@ -44,6 +44,7 @@ export async function getGpt4Result({
     })),
     model: "gpt-4o",
     stream: true,
+    stream_options: { include_usage: true },
   });
 
   return result;

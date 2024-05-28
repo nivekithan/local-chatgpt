@@ -9,6 +9,8 @@ export type Message = {
   role: MessageRole;
   sort: number;
   createdAt: string;
+  promptTokens?: number | null;
+  completionTokens?: number | null;
 };
 
 export type MessageList = {

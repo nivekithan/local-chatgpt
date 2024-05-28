@@ -25,7 +25,7 @@ export async function action({ request }: ActionFunctionArgs) {
   const { cookie, clientGroupID } = ReplicachePullRequestSchema.parse(body);
 
   const response = await db.transaction(async (tx) => {
-    let prevVersion = cookie || 0;
+    const prevVersion = cookie || 0;
 
     const [, space] = await Promise.all([
       getClientGroup(tx, { clientGroupID, currentUserId: user.id }),
@@ -71,6 +71,8 @@ export async function action({ request }: ActionFunctionArgs) {
                 sort: message.sort,
                 content: message.content,
                 createdAt: message.createdAt.toISOString(),
+                promptTokens: message.promptTokens,
+                completionTokens: message.completionTokens,
               } satisfies Message,
             };
           })
