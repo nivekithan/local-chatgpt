@@ -32,7 +32,7 @@ import { FORM_ACTIONS, NEW_CHAT_ID } from "~/lib/constants";
 import { useActiveListId } from "~/lib/stores/activeMessageListId";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { validateRequest } from "~/lib/auth.server";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { streamingMessageStore } from "~/lib/stores/streamingMessage";
 import {
   Dialog,
@@ -43,6 +43,7 @@ import {
   DialogTrigger,
 } from "~/components/ui/dialog";
 import { Input } from "~/components/ui/input";
+import { useVirtualizer } from "@tanstack/react-virtual";
 
 export const meta: MetaFunction = () => {
   return [
@@ -89,9 +90,7 @@ export default function Index() {
   return (
     <QueryClientProvider client={queryClient}>
       <div className="flex">
-        <div className="w-[352px] h-screen border-r-2 overflow-auto">
-          <SideBar replicache={replicache} openaiKey={openaiKey} />
-        </div>
+        <SideBar replicache={replicache} openaiKey={openaiKey} />
         <div className="min-h-screen flex flex-col flex-1 relative">
           <div className="flex-1 max-h-[calc(100vh-72px)] overflow-auto">
             <MessageList replicache={replicache} />
@@ -221,27 +220,85 @@ export function SearchQuery() {
 
 function SideBar({
   replicache,
-  openaiKey,
 }: {
   replicache: Replicache;
   openaiKey: string | null;
 }) {
+  return <VirtualizedMessageList replicache={replicache} />;
+}
+
+function VirtualizedMessageList({ replicache }: { replicache: Replicache }) {
   const activeListId = useActiveListId((state) => state.activeListId);
   const messageList = useSortedMessageList(replicache);
 
+  // The scrollable element for the virtualized list
+  const scrollableElementRef = useRef<HTMLDivElement>(null);
+
+  const getKeyFromIndex = useCallback(
+    (index: number) => {
+      const item = messageList[index];
+
+      if (!item) {
+        throw new Error(
+          "Tanstack virutal returned `index` that is out of bounds"
+        );
+      }
+
+      return item[0];
+    },
+    [messageList]
+  );
+
+  const rowVirtualizer = useVirtualizer({
+    count: messageList.length,
+    getScrollElement: () => scrollableElementRef.current,
+    estimateSize: () => 40,
+    gap: 16,
+    getItemKey: getKeyFromIndex,
+  });
+
   return (
-    <div className="p-4">
-      <div className="flex justify-between items-center mb-2">
-        <h3 className="font-semibold text-sm">Local ChatGPT</h3>
-        <UpdateOpenAiKeyDialog openaiKey={openaiKey} />
-      </div>
-      <ol className="flex flex-col gap-y-4">
-        {messageList.map(([id, messageList]) => {
+    <div
+      className="w-[352px] h-screen border-r-2 overflow-auto p-4"
+      ref={scrollableElementRef}
+    >
+      {/* <div className="flex justify-between items-center mb-2"> */}
+      {/*   <h3 className="font-semibold text-sm">Local ChatGPT</h3> */}
+      {/*   <UpdateOpenAiKeyDialog openaiKey={openaiKey} /> */}
+      {/* </div> */}
+      <ol
+        className="flex flex-col gap-y-4"
+        style={{
+          height: `${rowVirtualizer.getTotalSize()}px`,
+          width: "100%",
+          position: "relative",
+        }}
+      >
+        {rowVirtualizer.getVirtualItems().map((virtualItem) => {
+          const item = messageList[virtualItem.index];
+
+          if (!item) {
+            throw new Error(
+              "Tanstack virutal returned `item` that is out of bounds"
+            );
+          }
+
+          const [id, messageListTopic] = item;
           const idWithoutPrefix = id.replace("messageList/", "");
           const isActive = activeListId === idWithoutPrefix;
 
           return (
-            <li key={id} className="relative">
+            <li
+              key={virtualItem.key}
+              style={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                width: "100%",
+                height: `${virtualItem.size}px`,
+                transform: `translateY(${virtualItem.start}px)`,
+              }}
+            >
               <Button
                 variant={isActive ? "secondary" : "outline"}
                 type="button"
@@ -250,7 +307,7 @@ function SideBar({
                   useActiveListId.getState().setActiveListId(idWithoutPrefix);
                 }}
               >
-                {messageList.name}
+                {messageListTopic.name}
               </Button>
             </li>
           );
@@ -260,6 +317,7 @@ function SideBar({
   );
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function UpdateOpenAiKeyDialog({ openaiKey }: { openaiKey: string | null }) {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
@@ -334,9 +392,9 @@ async function processSearchQuery({
   const currentMessageListId =
     messageListId === NEW_CHAT_ID
       ? await replicache.mutate.addMessageList({
-        name: query,
-        id: `${crypto.randomUUID()}`,
-      })
+          name: query,
+          id: `${crypto.randomUUID()}`,
+        })
       : messageListId;
 
   if (messageListId === NEW_CHAT_ID) {
