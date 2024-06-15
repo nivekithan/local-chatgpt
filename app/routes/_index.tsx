@@ -52,6 +52,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "~/components/ui/tooltip";
+import { throttle } from "dettle";
 
 export const meta: MetaFunction = () => {
   return [
@@ -505,6 +506,11 @@ async function processSearchQuery({
   let combinedMessage = "";
   let usage: CompletionUsage | null = null;
 
+  const updateStreamingMessage = throttle((message: string) => {
+    streamingMessageStore
+      .getState()
+      .setStreamingMessage(currentMessageListId, message);
+  }, 250);
   for await (const chunk of response) {
     const streamingMessage = chunk.choices[0]?.delta.content;
     const chatUsage = chunk.usage;
@@ -516,11 +522,11 @@ async function processSearchQuery({
       continue;
     }
 
-    streamingMessageStore
-      .getState()
-      .setStreamingMessage(currentMessageListId, combinedMessage);
     combinedMessage += streamingMessage;
+    updateStreamingMessage(combinedMessage);
   }
+
+  updateStreamingMessage.flush();
 
   if (!usage) {
     console.error("Usage data is not being returned from OpenAI");
