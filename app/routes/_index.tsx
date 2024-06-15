@@ -205,7 +205,7 @@ export function SearchQuery() {
 
   return (
     <Form
-      className="flex gap-x-4 "
+      className="flex gap-x-4 items-end "
       method="post"
       id={form.id}
       onSubmit={form.onSubmit}
