@@ -1,10 +1,11 @@
+// eslint-disable-next-line @typescript-eslint/triple-slash-reference
 /// <reference path="./.sst/platform/config.d.ts" />
 
 export default $config({
   app(input) {
     return {
       name: "local-chatgpt",
-      removal: input?.stage === "production" ? "retain" : "remove",
+      removal: input?.stage === "prod" ? "retain" : "remove",
       home: "aws",
       providers: {
         aws: {
@@ -23,7 +24,14 @@ export default $config({
     const sessionSecret = new sst.Secret("SessionSecret");
 
     new sst.aws.Remix("LocalChatGPT", {
-      // domain: $app.stage === "prod" ? "chat.nivekithan.com" : undefined,
+      domain:
+        $app.stage === "prod"
+          ? {
+              name: "chat.nivekithan.com",
+              dns: false,
+              cert: "arn:aws:acm:us-east-1:100519828617:certificate/4faa2031-359e-4168-9c4c-556c72ce9b48",
+            }
+          : undefined,
       link: [
         postgresConnectionUrl,
         replicacheLicenseKey,
