@@ -98,23 +98,25 @@ export default function Index() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <div className="flex">
-        <SideBar replicache={replicache} openaiKey={openaiKey} />
-        <div className="min-h-screen flex flex-col flex-1 relative gap-y-4">
-          <div className="h-[60px] border-b-2 flex flex-col justify-center p-4">
-            <div className="flex justify-between items-center mb-2">
-              <UpdateOpenAiKeyDialog openaiKey={openaiKey} />
-              <DeleteMessageList />
+      <TooltipProvider>
+        <div className="flex">
+          <SideBar replicache={replicache} openaiKey={openaiKey} />
+          <div className="min-h-screen flex flex-col flex-1 relative gap-y-4">
+            <div className="h-[60px] border-b-2 flex flex-col justify-center p-4">
+              <div className="flex justify-between items-center mb-2">
+                <UpdateOpenAiKeyDialog openaiKey={openaiKey} />
+                <DeleteMessageList />
+              </div>
             </div>
-          </div>
-          <MessageList replicache={replicache} />
-          <div className="fixed bottom-0 w-[calc(100%-352px)] right-0 bg-background min-h-[72px] py-4 grid place-items-center">
-            <div className="w-[75ch]">
-              <SearchQuery />
+            <MessageList replicache={replicache} />
+            <div className="fixed bottom-0 w-[calc(100%-352px)] right-0 bg-background min-h-[72px] py-4 grid place-items-center">
+              <div className="w-[75ch]">
+                <SearchQuery />
+              </div>
             </div>
           </div>
         </div>
-      </div>
+      </TooltipProvider>
     </QueryClientProvider>
   );
 }
@@ -325,27 +327,25 @@ function VirtualizedMessageList({ replicache }: { replicache: Replicache }) {
                 transform: `translateY(${virtualItem.start}px)`,
               }}
             >
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant={isActive ? "secondary" : "outline"}
-                      type="button"
-                      className="w-full justify-start truncate overflow-hidden whitespace-nowrap block text-start"
-                      onClick={() => {
-                        useActiveListId
-                          .getState()
-                          .setActiveListId(idWithoutPrefix);
-                      }}
-                    >
-                      {messageListTopic.name}
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>{messageListTopic.name}</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant={isActive ? "secondary" : "outline"}
+                    type="button"
+                    className="w-full justify-start truncate overflow-hidden whitespace-nowrap block text-start"
+                    onClick={() => {
+                      useActiveListId
+                        .getState()
+                        .setActiveListId(idWithoutPrefix);
+                    }}
+                  >
+                    {messageListTopic.name}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>{messageListTopic.name}</p>
+                </TooltipContent>
+              </Tooltip>
             </li>
           );
         })}
@@ -437,18 +437,16 @@ function DeleteMessageList() {
           value={activeListId}
           readOnly
         />
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button variant="destructive" size="icon" type="submit">
-                <Trash size={16} />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>Delete this message list</p>
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button variant="destructive" size="icon" type="submit">
+              <Trash size={16} />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Delete this message list</p>
+          </TooltipContent>
+        </Tooltip>
       </Form>
     </div>
   );
