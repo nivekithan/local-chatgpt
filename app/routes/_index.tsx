@@ -13,12 +13,20 @@ import {
   useSubmit,
 } from "@remix-run/react";
 import { Resource } from "sst";
-import { getInitilizedReplicache, getReplicache } from "~/lib/replicache";
+import {
+  extractMessageListId,
+  getInitilizedReplicache,
+  getReplicache,
+} from "~/lib/replicache";
 import { MessageList } from "~/components/message";
 import { z } from "zod";
 import { useForm } from "@conform-to/react";
 import { parseWithZod } from "@conform-to/zod";
-import { listSortedMessages, useSortedMessageList } from "~/lib/message";
+import {
+  listSortedMessageList,
+  listSortedMessages,
+  useSortedMessageList,
+} from "~/lib/message";
 import {
   getGpt4Result,
   getOpenAiKey,
@@ -177,7 +185,15 @@ export async function clientAction({ request }: ClientActionFunctionArgs) {
     await replicache.mutate.deleteMessageList({
       messageListId: submission.value.messageListId,
     });
-    useActiveListId.getState().setActiveListId(NEW_CHAT_ID);
+    const messageList = await replicache.query(listSortedMessageList);
+
+    const messageListId = extractMessageListId(
+      messageList[0]?.[0] || NEW_CHAT_ID
+    );
+
+    console.log({ messageListId, NEW_CHAT_ID });
+
+    useActiveListId.getState().setActiveListId(messageListId);
     return { submission: submission.reply() };
   } else {
     throw new Error("Unknown action");
@@ -342,7 +358,8 @@ function VirtualizedMessageList({ replicache }: { replicache: Replicache }) {
                     {messageListTopic.name}
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent>
+
+                <TooltipContent side="right">
                   <p>{messageListTopic.name}</p>
                 </TooltipContent>
               </Tooltip>

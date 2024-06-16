@@ -25,14 +25,11 @@ export function MessageList({
 
   const scrollToBottom = useMemo(() => {
     return throttle(() => {
-      console.log("Scrolling to bottom");
       if (messageEndEle && canScroll) {
         messageEndEle.scrollIntoView({ behavior: "smooth", block: "end" });
       }
     }, 500);
   }, [canScroll, messageEndEle]);
-
-  console.log({ canScroll });
 
   useEffect(() => {
     if (streamingMessage) {

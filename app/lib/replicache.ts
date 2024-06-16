@@ -200,3 +200,7 @@ export const PossibleMutationsSchema = z.discriminatedUnion("name", [
   UpdateMessageListTitleMutation,
   DeleteMessageListMutation,
 ]);
+
+export function extractMessageListId(fullId: string) {
+  return fullId.replace("messageList/", "");
+}
