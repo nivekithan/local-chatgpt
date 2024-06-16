@@ -107,9 +107,7 @@ export default function Index() {
               <DeleteMessageList />
             </div>
           </div>
-          <div className="flex-1 max-h-[calc(100vh-132px)] overflow-auto">
-            <MessageList replicache={replicache} />
-          </div>
+          <MessageList replicache={replicache} />
           <div className="fixed bottom-0 w-[calc(100%-352px)] right-0 bg-background min-h-[72px] py-4 grid place-items-center">
             <div className="w-[75ch]">
               <SearchQuery />
@@ -510,7 +508,7 @@ async function processSearchQuery({
     streamingMessageStore
       .getState()
       .setStreamingMessage(currentMessageListId, message);
-  }, 250);
+  }, 150);
   for await (const chunk of response) {
     const streamingMessage = chunk.choices[0]?.delta.content;
     const chatUsage = chunk.usage;
