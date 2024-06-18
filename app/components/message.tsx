@@ -1,7 +1,7 @@
 import { Message, useSortedMessage } from "~/lib/message";
 import { ReplicacheInstance } from "~/lib/replicache";
 import { useActiveListId } from "~/lib/stores/activeMessageListId";
-import { FasterMarkdown } from "./markdown";
+import { Markdown } from "~/components/markdown/markdownRenderer";
 import { Suspense, useEffect, useMemo, useState } from "react";
 import { useStreamingMessage } from "~/lib/stores/streamingMessage";
 import { useScrollDirection } from "react-use-scroll-direction";
@@ -133,7 +133,7 @@ function AiMessageView({
   return (
     <div className="flex flex-col gap-y-0.5">
       <h4 className="text-sm font-semibold text-green-300">ChatGPT</h4>
-      <FasterMarkdown content={message} />
+      <Markdown content={message} />
       <p className="text-xs text-muted-foreground flex gap-x-2">
         {promptTokens ? <span>in: {promptTokens}</span> : null}
         {completionTokens ? <span>out: {completionTokens}</span> : null}
@@ -146,7 +146,7 @@ function UserMessageView({ message }: { message: string }) {
   return (
     <div className="flex flex-col gap-y-0.5">
       <h4 className="text-sm font-semibold">User</h4>
-      <FasterMarkdown content={message} />
+      <Markdown content={message} />
     </div>
   );
 }

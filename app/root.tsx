@@ -7,6 +7,7 @@ import {
 } from "@remix-run/react";
 import href from "./tailwind.css?url";
 import { LinksFunction } from "@remix-run/node";
+import { Toaster } from "~/components/ui/sonner";
 
 export function links(): ReturnType<LinksFunction> {
   return [
@@ -29,6 +30,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
       </head>
       <body>
         {children}
+        <Toaster />
         <ScrollRestoration />
         <Scripts />
       </body>
